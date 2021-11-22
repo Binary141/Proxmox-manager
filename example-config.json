@@ -1,0 +1,6 @@
+{
+	"ip": "IP_OF_PROXMOX_HOST",
+	"username": "USERNAME",
+	"password": "PASSWORD"
+
+}
