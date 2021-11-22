@@ -52,9 +52,12 @@ fetch(REQUEST_URL, {
 					running_button = document.createElement("button");
 					running_button.innerHTML = 'running';
 					running_button.id = temp_vm_name;
+					running_button.style.background = "Green";
+
 
 					running_button.onclick = function(){
 						console.log("VM ", this.id ,"is running");
+
 					}
 
 					tr.appendChild(running_button);
@@ -66,6 +69,7 @@ fetch(REQUEST_URL, {
 					stopped_button.innerHTML = 'stopped';
 					stopped_button.id = temp_vm_name;
 					stopped_button.vmid = temp_vm_name;
+					stopped_button.style.background = "Red";
 
 					stopped_button.onclick = function(){
 						console.log("VM ", this.vmid ,"is stopped");

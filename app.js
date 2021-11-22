@@ -61,6 +61,17 @@ app.get('/test', (req, res) => {
 
 app.listen(port, function() {
 	console.log('the server is listening on ', port);
+	//exec('qm list', {
+	//	user: server_username,
+	//	host: '192.168.1.207',
+	//	password: server_password
+	//}, (err, stdout) => {
+	//	if (err) { 
+	//		return reject(err) 
+	//	}
+	//	result = stdout.split('\n');
+	//	resolve(result)      
+	//})
 })
 
 
