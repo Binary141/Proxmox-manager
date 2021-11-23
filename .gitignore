@@ -2,3 +2,6 @@ config.json
 url.js
 
 node_modules/*
+
+*.swp
+*.*.swp
