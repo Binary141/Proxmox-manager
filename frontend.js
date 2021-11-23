@@ -1,31 +1,26 @@
 REQUEST_URL = getURL();
-console.log("The url is: ", REQUEST_URL);
 
-console.log("made it");
+
+vm_table = document.getElementById("vms");
+template_table = document.getElementById("templates");
+
+console.log(template_table);;
+
 fetch(REQUEST_URL, {
 	method: 'GET',
 	headers: {
 	},
 }).then(function(response){
-	console.log("response portion");
 	response.json().then(function (data) {
 		for(i=0; i<data.length; i++){
-			//console.log("data: ", data[i]);
 			appendedstring = "";
 			tr = document.createElement("tr");
-			table = document.getElementById("tablediv");
-			splitdata = data[i].split("\t");
+			splitdata = String(data[i].split("\t")).replace(" ", "");
 			temp_list = [];
 
-			str = String(splitdata);
-
-			newstr = str.replace(" ", "");
-			newstr = str.replace("	", "");
-
-			for(j=2; j<newstr.length; j++){
-				if(newstr[j] != " "){
-					appendedstring += newstr[j];
-					//console.log("YES", appendedstring);
+			for(j=0; j<splitdata.length; j++){
+				if(splitdata[j] != " "){
+					appendedstring += splitdata[j];
 				}
 				else {
 					if(appendedstring != "") {
@@ -41,48 +36,52 @@ fetch(REQUEST_URL, {
 					}
 				}
 			}
-			console.log("The list is: ", temp_list);
-			if(i != 0){
+			
+			if(temp_list[2] != undefined){
 				temp_vm_name = temp_list[1];
-				console.log("The vm status is: ", temp_list[2]);
 
-				if(temp_list[2] == "running"){
-					console.log("The vm ", temp_vm_name, "is running");
-
-					running_button = document.createElement("button");
-					running_button.innerHTML = 'running';
-					running_button.id = temp_vm_name;
-					running_button.style.background = "Green";
-
-
-					running_button.onclick = function(){
-						console.log("VM ", this.id ,"is running");
-
-					}
-
-					tr.appendChild(running_button);
-				}
-				else if(temp_list[2] == "stopped"){
-					console.log("The vm ", temp_vm_name, "is stopped");
-
-					stopped_button = document.createElement("button");
-					stopped_button.innerHTML = 'stopped';
-					stopped_button.id = temp_vm_name;
-					stopped_button.vmid = temp_vm_name;
-					stopped_button.style.background = "Red";
-
-					stopped_button.onclick = function(){
-						console.log("VM ", this.vmid ,"is stopped");
-					}
-
-					tr.appendChild(stopped_button);
+				if(temp_vm_name.toUpperCase().includes("TEMPLATE")){
+					console.log("Template");
+					template_table.appendChild(tr);
 				}
 				else{
-					console.log("some error has occured with the vm ", temp_list[1]);
+					if(temp_list[2] == "running"){
+
+						running_button = document.createElement("button");
+						running_button.innerHTML = 'running';
+						running_button.id = temp_vm_name;
+						running_button.vmid = temp_list[0];
+						running_button.style.background = "Green";
+
+						running_button.onclick = function(){
+							console.log("VM ", this.vmid ,"is running");
+							alert("Are you sure you want to stop the vm " + this.id);
+						}
+						tr.appendChild(running_button);
+						vm_table.appendChild(tr);
+					}
+					else if(temp_list[2] == "stopped"){
+
+						stopped_button = document.createElement("button");
+						stopped_button.innerHTML = 'stopped';
+						stopped_button.id = temp_vm_name;
+						stopped_button.vmid = temp_list[0];
+						stopped_button.style.background = "Red";
+
+						stopped_button.onclick = function(){
+
+							console.log("VM ", this.vmid ,"is stopped");
+							alert("Are you sure you want to start the vm " + this.id);
+						}
+
+						tr.appendChild(stopped_button);
+						vm_table.appendChild(tr);
+					}
+					else{
+						console.log("some error has occured with the vm ", temp_list[1]);
+					}
 				}
 			}
-			table.appendChild(tr);
 		}
 	});
 });
-console.log("response");
