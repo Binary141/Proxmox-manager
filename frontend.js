@@ -1,10 +1,40 @@
+// qm config <VMID> | grep ^args ; this will show the vnc port that is configured for a vm
 REQUEST_URL = getURL();
 STOP_VM_URL = getStopVmUrl();
 START_VM_URL = getStartVmUrl();
+CLONE_VM_URL = getCloneVmUrl();
 
 
-vm_table = document.getElementById("vms");
-template_table = document.getElementById("templates");
+var vm_table = document.getElementById("vms");
+var template_table = document.getElementById("templates");
+var cloneVm = document.getElementById("cloneVm");
+
+cloneVm.onclick = function(){
+	if(template_table.value != ""){
+		let template_vm_id = template_table[template_table.selectedIndex].vmid
+		console.log("the vm is: ", template_vm_id);
+
+		data = "id=" + template_vm_id;
+		if(confirm("Are you sure you want to clone the vm " + template_vm_id)){
+
+			fetch(CLONE_VM_URL, {
+				method: 'POST',
+				body: data,
+				headers: {
+					'Content-type': 'application/x-www-form-urlencoded'
+				},
+
+			}).then(function(response){
+				response.json().then(function (data) {
+					console.log("data is: ", data);
+					if(data == ''){
+						load_urls();
+					}
+				})
+			});
+		};
+	}
+}
 
 
 function load_urls(){
@@ -15,9 +45,6 @@ function load_urls(){
 	}).then(function(response){
 		for(var i = vm_table.rows.length; i > 1; i--){
 			vm_table.deleteRow(i-1);
-		}
-		for(var i = template_table.rows.length; i > 1; i--){
-			template_table.deleteRow(i-1);
 		}
 			response.json().then(function (data) {
 			for(i=0; i<data.length; i++){
@@ -50,7 +77,11 @@ function load_urls(){
 
 					if(temp_vm_name.toUpperCase().includes("TEMPLATE")){
 						console.log("Template");
-						template_table.appendChild(tr);
+						let option = document.createElement("option");
+						option.vmid = temp_list[0];
+						option.text = temp_list[1];
+						template_table.add(option);
+
 					}
 					else{
 						if(temp_list[2] == "running"){
@@ -64,23 +95,24 @@ function load_urls(){
 							running_button.onclick = function(){
 								data = "id=" + this.vmid;
 								console.log("VM ", this.vmid ,"is running");
-								alert("Are you sure you want to stop the vm " + this.id);
-								fetch(STOP_VM_URL, {
-									method: 'post',
-									body: data,
-									headers: {
-										'Content-type': 'application/x-www-form-urlencoded'
-									},
+								if(confirm("Are you sure you want to start the vm " + this.id)){
 
-								}).then(function(response){
-									response.json().then(function (data) {
-										console.log("data is: ", data);
-										if(data == ''){
-											load_urls();
-										}
-									})
-								});
-								
+									fetch(STOP_VM_URL, {
+										method: 'POST',
+										body: data,
+										headers: {
+											'Content-type': 'application/x-www-form-urlencoded'
+										},
+
+									}).then(function(response){
+										response.json().then(function (data) {
+											console.log("data is: ", data);
+											if(data == ''){
+												load_urls();
+											}
+										})
+									});
+								};
 							}
 							tr.appendChild(running_button);
 							vm_table.appendChild(tr);
@@ -96,22 +128,24 @@ function load_urls(){
 							stopped_button.onclick = function(){
 								data = "id=" + this.vmid;
 								console.log("VM ", this.vmid ,"is stopped");
-								alert("Are you sure you want to start the vm " + this.id);
-								fetch(START_VM_URL, {
-									method: 'post',
-									body: data,
-									headers: {
-										'Content-type': 'application/x-www-form-urlencoded'
-									},
+								if(confirm("Are you sure you want to start the vm " + this.id)){
 
-								}).then(function(response){
-									response.json().then(function (data) {
-										console.log("data is: ", data);
-										if(data == ''){
-											load_urls();
-										}
-									})
-								});
+									fetch(START_VM_URL, {
+										method: 'post',
+										body: data,
+										headers: {
+											'Content-type': 'application/x-www-form-urlencoded'
+										},
+
+									}).then(function(response){
+										response.json().then(function (data) {
+											console.log("data is: ", data);
+											if(data == ''){
+												load_urls();
+											}
+										})
+									});
+								};
 							}
 
 							tr.appendChild(stopped_button);
@@ -127,4 +161,3 @@ function load_urls(){
 	});
 }
 load_urls();
-	

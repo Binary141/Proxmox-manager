@@ -8,3 +8,7 @@ function getStartVmUrl() {
 function getStopVmUrl() {
 	return "YOUR_URL_HERE";
 }
+
+function getCloneVmUrl() {
+	return "YOUR_URL_HERE";
+}

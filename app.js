@@ -35,7 +35,7 @@ function executeSshCommand (host, command) {
       password: server_password
     }, (err, stdout) => {
       if (err) { 
-        return reject(err) 
+        console.log("THE ERROR IS: ", err);
       }
       
       result = stdout.split('\n');
@@ -55,15 +55,19 @@ app.get('/test', (req, res) => {
 })
 
 app.post('/startvm', (req, res) => {
-	//console.log("the request was: ", req.body.id);
 	start_command = "qm start " + req.body.id;
 	console.log("start command", start_command);
 	getHostStats(v_host, res, start_command);
 })
 
 app.post('/stopvm', (req, res) => {
-	//console.log("the request was: ", req.body.id);
 	start_command = "qm stop " + req.body.id;
+	console.log("stop command", start_command);
+	getHostStats(v_host, res, start_command);
+})
+
+app.post('/clonevm', (req, res) => {
+	start_command = "qm clone " + req.body.id + " 119 --full --name clone1"
 	console.log("stop command", start_command);
 	getHostStats(v_host, res, start_command);
 })
