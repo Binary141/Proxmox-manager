@@ -46,7 +46,6 @@ function executeSshCommand (host, command) {
 
 async function getHostStats(host, res, command) {
 	const results = await executeSshCommand(host, command);
-	//console.log('Results for', host)
 	console.log(results)
 	sendfunc(results,res);
 }

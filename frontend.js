@@ -13,7 +13,13 @@ function load_urls(){
 		headers: {
 		},
 	}).then(function(response){
-		response.json().then(function (data) {
+		for(var i = vm_table.rows.length; i > 1; i--){
+			vm_table.deleteRow(i-1);
+		}
+		for(var i = template_table.rows.length; i > 1; i--){
+			template_table.deleteRow(i-1);
+		}
+			response.json().then(function (data) {
 			for(i=0; i<data.length; i++){
 				appendedstring = "";
 				tr = document.createElement("tr");
@@ -66,7 +72,14 @@ function load_urls(){
 										'Content-type': 'application/x-www-form-urlencoded'
 									},
 
-								}).then(console.log("after"));
+								}).then(function(response){
+									response.json().then(function (data) {
+										console.log("data is: ", data);
+										if(data == ''){
+											load_urls();
+										}
+									})
+								});
 								
 							}
 							tr.appendChild(running_button);
@@ -91,7 +104,14 @@ function load_urls(){
 										'Content-type': 'application/x-www-form-urlencoded'
 									},
 
-								}).then(console.log("after"));
+								}).then(function(response){
+									response.json().then(function (data) {
+										console.log("data is: ", data);
+										if(data == ''){
+											load_urls();
+										}
+									})
+								});
 							}
 
 							tr.appendChild(stopped_button);
