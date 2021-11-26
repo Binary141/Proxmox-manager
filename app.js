@@ -23,7 +23,6 @@ app.all('/*', function(req, res, next) {
 });
 
 function sendfunc(data, res) {
-	console.log(data);
 	res.send(JSON.stringify(data));
 }
 
@@ -70,6 +69,12 @@ app.post('/clonevm', (req, res) => {
 	start_command = "qm clone " + req.body.id + " 119 --full --name clone1"
 	console.log("stop command", start_command);
 	getHostStats(v_host, res, start_command);
+})
+
+app.put('/renamevm', (req, res) => {
+	start_command = "qm set " + req.body.id + " --name " + req.body.newName;
+	console.log("rename command", start_command);
+	//getHostStats(v_host, res, start_command);
 })
 
 app.listen(port, function() {

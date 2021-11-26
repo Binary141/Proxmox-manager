@@ -36,6 +36,24 @@ cloneVm.onclick = function(){
 	}
 }
 
+function change_state(id, url){
+	data = "id=" + id;
+	fetch(url, {
+		method: 'POST',
+		body: data,
+		headers: {
+			'Content-type': 'application/x-www-form-urlencoded'
+		},
+	}).then(function(response){
+		response.json().then(function (data) {
+			console.log("data is: ", data);
+			if(data == ''){
+				load_urls();
+			}
+		})
+	});
+}
+
 
 function load_urls(){
 	fetch(REQUEST_URL, {
@@ -93,25 +111,9 @@ function load_urls(){
 							running_button.style.background = "Green";
 
 							running_button.onclick = function(){
-								data = "id=" + this.vmid;
-								console.log("VM ", this.vmid ,"is running");
-								if(confirm("Are you sure you want to start the vm " + this.id)){
-
-									fetch(STOP_VM_URL, {
-										method: 'POST',
-										body: data,
-										headers: {
-											'Content-type': 'application/x-www-form-urlencoded'
-										},
-
-									}).then(function(response){
-										response.json().then(function (data) {
-											console.log("data is: ", data);
-											if(data == ''){
-												load_urls();
-											}
-										})
-									});
+								if(confirm("Are you sure you want to stop the vm " + this.id)){
+									console.log("VM ", this.vmid ,"is running");
+									change_state(this.vmid, STOP_VM_URL);
 								};
 							}
 							tr.appendChild(running_button);
@@ -126,25 +128,9 @@ function load_urls(){
 							stopped_button.style.background = "Red";
 
 							stopped_button.onclick = function(){
-								data = "id=" + this.vmid;
-								console.log("VM ", this.vmid ,"is stopped");
 								if(confirm("Are you sure you want to start the vm " + this.id)){
-
-									fetch(START_VM_URL, {
-										method: 'post',
-										body: data,
-										headers: {
-											'Content-type': 'application/x-www-form-urlencoded'
-										},
-
-									}).then(function(response){
-										response.json().then(function (data) {
-											console.log("data is: ", data);
-											if(data == ''){
-												load_urls();
-											}
-										})
-									});
+									console.log("VM ", this.vmid ,"is stopped");
+									change_state(this.vmid, START_VM_URL);
 								};
 							}
 
