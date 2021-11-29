@@ -74,7 +74,25 @@ function edit_vm(that){ // that is the 'this' for the edit button
 	}
 	else if(that.innerHTML == "SAVE"){
 		if(confirm("Do you want to save these settings?")){
+			console.log("THAT ID: ", that.vmid);
+			data = "vmid=" + that.vmid + "&newName=" + stopped_vm_table.rows[that.row].cells[1].querySelector('input').value;
+			console.log("DATA: ", data);
 			that.innerHTML = "EDIT";
+			fetch(RENAME_VM_URL, {
+				method: 'PUT',
+				body: data,
+				headers: {
+					'Content-type': 'application/x-www-form-urlencoded'
+				},
+
+			}).then(function(response){
+				response.json().then(function (data) {
+					console.log("data is: ", data);
+					if(data[0].includes("update VM")){
+						load_urls();
+					}
+				})
+			});
 		}
 		else{
 			for(var cellindex = 1; cellindex < stopped_vm_table.rows[that.row].cells.length-3; cellindex++){
@@ -96,6 +114,9 @@ function load_urls(){
 	}).then(function(response){
 		for(let i = vm_table.rows.length; i > 1; i--){ //clears the table after each fetch request to keep it from increasing in size
 			vm_table.deleteRow(i-1);
+		}
+		for(let i = stopped_vm_table.rows.length; i > 1; i--){ //clears the table after each fetch request to keep it from increasing in size
+			stopped_vm_table.deleteRow(i-1);
 		}
 		response.json().then(function (data) {
 			for(i=0; i<data.length; i++){

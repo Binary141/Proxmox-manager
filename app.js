@@ -72,9 +72,9 @@ app.post('/clonevm', (req, res) => {
 })
 
 app.put('/renamevm', (req, res) => {
-	start_command = "qm set " + req.body.id + " --name " + req.body.newName;
+	start_command = "qm set " + req.body.vmid + " --name " + req.body.newName;
 	console.log("rename command", start_command);
-	//getHostStats(v_host, res, start_command);
+	getHostStats(v_host, res, start_command);
 })
 
 app.listen(port, function() {
