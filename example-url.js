@@ -12,3 +12,6 @@ function getStopVmUrl() {
 function getCloneVmUrl() {
 	return "YOUR_URL_HERE";
 }
+function getRenameVmUrl() {
+	return "YOUR_URL_HERE";
+}
