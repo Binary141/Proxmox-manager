@@ -66,7 +66,7 @@ app.post('/stopvm', (req, res) => {
 })
 
 app.post('/clonevm', (req, res) => {
-	start_command = "qm clone " + req.body.id + " 119 --full --name clone1"
+	start_command = "qm clone " + req.body.id + " " + req.body.newVmId + " --full"
 	console.log("stop command", start_command);
 	getHostStats(v_host, res, start_command);
 })
