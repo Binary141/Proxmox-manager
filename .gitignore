@@ -1,7 +1,9 @@
 config.json
 url.js
-
+myKeyFileOrBuffer
+*.pub
 node_modules/*
 
 *.swp
 *.*.swp
+

@@ -134,12 +134,15 @@ function load_urls(){
 		method: 'GET',
 		headers: {},
 	}).then(function(response){
+		console.log('Response: ', response);
 		template_table.innerHTML = ''; //clears template dropdown list to not keep duplicating upon new requests
 		clear_table(vm_table); //clears running vm table to not keep duplicating upon new requests
 		clear_table(stopped_vm_table);//clears stopped vm table to not keep duplicating upon new requests
 		response.json().then(function (data) {
+			console.log('data: ', data);
 			for(i=1; i<data.length; i++){ //loops through each row of JSON sent from server
 				appendedstring = "";
+				console.log("data[i]: ", data[i]);
 				tr = document.createElement("tr");
 				splitdata = String(data[i].split("\t")).replace(" ", "");
 				temp_list = [];

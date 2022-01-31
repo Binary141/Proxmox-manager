@@ -1,6 +1,15 @@
 {
 	"ip": "IP_OF_PROXMOX_HOST",
 	"username": "USERNAME",
-	"password": "PASSWORD"
+	"password": "PASSWORD",
+
+        "dbip": "IP_OF_DB_SERVER",
+        "dbport":"DB_PORT",
+        "dbuser": "USERNAME",
+        "dbpass": "PASSWORD",
+	"database": "DB",
+        "privKey": "PATH_TO_PRIVATE_KEY"
+
+
 
 }
