@@ -12,12 +12,12 @@ const conn = new Client();
 const { NodeSSH } = require('node-ssh');
 const ssh = new NodeSSH();
 
-var server = http.createServer(app)
-var exec = require('ssh-exec')
-var v_host = config.ip
-var server_password = config.password
-var server_username = config.username;
-var privKey = config.privKey;
+const server = http.createServer(app)
+const exec = require('ssh-exec')
+const v_host = config.ip
+const server_password = config.password
+const server_username = config.username;
+const privKey = config.privKey;
 
 db.query("Select * from vminfo", function (err, result) {
 	if (err) throw err;
@@ -37,7 +37,7 @@ app.all('/*', function(req, res, next) {
 
 
 function sendfunc(data, res) {
-	res.send(JSON.stringify(data));
+	res.send(data); //JSON.stringify(data));
 }
 
 async function getHostStats(host, res, command) {
@@ -54,8 +54,8 @@ async function execute_vmid(command){
 			privateKey: readFileSync(privKey, 'utf8')
 		}).then(function() {
 			ssh.execCommand(command).then(function(result) {
-				console.log("STDOUT: " + result.stdout);
-				console.log('STDERR: ' + result.stderr)
+				//console.log("STDOUT: " + result.stdout);
+				//console.log('STDERR: ' + result.stderr)
 				resolve(result.stdout);
 			})
 		})
@@ -64,15 +64,18 @@ async function execute_vmid(command){
 
 }
 
-async function parse_id(){
-	new_data = await execute_vmid('ls -la /etc/pve/nodes/pve/qemu-server/ | awk \'{print $9}\'');
-	var array = new_data.split('');
-	var temp = [];
-	var temp_str = "";
-	var vmid = [];
-	var commands = [];
+async function parse_id(res){
+	let new_data = await execute_vmid('ls -la /etc/pve/nodes/pve/qemu-server/ | awk \'{print $9}\'');
+	let array = new_data.split('');
+	let temp = [];
+	let temp_str = "";
+	let vmid_list = [];
+	let commands = [];
+	let config = "";
+	let response = {};
+	let text = '';
 
-	for(i in new_data.split('')){
+	for(i in array){
 		if(isNaN(array[i])){
 			temp.push(temp_str);
 			temp_str = "";
@@ -83,26 +86,40 @@ async function parse_id(){
 	}
 	for(i in temp){
 		if(temp[i] != "conf" && temp[i].length >= 3){
-			vmid.push(temp[i].slice(1))
+			vmid_list.push(temp[i].slice(1))
 		}
 	}
-	console.log("VMID: ", vmid);
-	
-	for(i = 0; i < vmid.length; i++){
-		command = 'cat /etc/pve/nodes/pve/qemu-server/' + vmid[i] + '.conf';
-		console.log(command);
+	console.log("VMID: ", vmid_list);
+
+	for(i = 0; i < vmid_list.length; i++){
+		command = 'cat /etc/pve/nodes/pve/qemu-server/' + vmid_list[i] + '.conf';
 		commands.push(command);
 	}
 	for(i=0; i < commands.length; i++){
+		args = '';
 		vmid = await execute_vmid(commands[i]);
+		config = vmid.split(/\r\n|\n\r|\n|\r/);
+
+		for(j=0; j < config.length; j++){
+			index = config[j];
+			word = index.slice(0, index.indexOf(":"));
+			value = index.slice(index.indexOf(":")+2)
+			if( j <= config.length-2 ){
+				args += '"' +  word.toString() + '"' + ':' + '"' + value.toString() + '"' + ',';
+			}
+			else{
+				args += '"' + word.toString() + '"' + ':' + '"' +  value.toString() + '"';
+
+			}
+		}
+		text += '[ "id": ' + vmid_list[i].toString() + ',' + args + ']';
 	}
-	console.log("END");
+	console.log("TEXT: ", text[1]);
+	sendfunc(text, res);
 }
 app.get('/test', (req, res) => {
 	console.log("Request");
-	vmid = parse_id();
-
-	sendfunc(vmid, res);
+	parse_id(res);
 })
 
 app.post('/startvm', (req, res) => {
