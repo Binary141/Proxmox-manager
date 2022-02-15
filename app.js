@@ -94,7 +94,7 @@ async function parse_id(res){
 		commands.push(command);
 	}
 	for(i=0; i < commands.length; i++){
-		let vm_status = execute_vmid('ps aux | grep -i "\-id ' + vmid_list[i] + '" | grep kvm');
+		let vm_status = await execute_vmid('ps aux | grep -i "\-id ' + vmid_list[i] + '" | grep kvm');
 		let args = '';
 		let notes = "";
 		vmid = await execute_vmid(commands[i]);
@@ -114,7 +114,6 @@ async function parse_id(res){
 				}
 			}
 			else{
-				//args += '"notes"' + ':' + '"' + index + '"';
 				if(j == 0){
 					notes += index.slice(1);
 				}
@@ -123,17 +122,27 @@ async function parse_id(res){
 
 				}
 			}
-
 		}
 
-		console.log("VM Status: ", Promise.resolve(vm_status));
+		//command = "ps aux | grep -i \"id 102\" | grep kvm | awk \'{ print \$1 }\'";
+		command = "qm status " + vmid_list[i];
+		//console.log("COMMAND:", command);
+	
+		//This somewhat works, but only for a handful of vms
 
-		if(vm_status.length > 0) {
-			//console.log("VM: ", vmid_list[i], "is ACTIVE");
-		}
-		else{
-			//console.log("VM: ", vmid_list[i], "is DEAD");
-		}
+		execute_vmid(command).then( (result) => {
+			console.log("VM " ,vmid_list[i], result);
+			//if(result.length > 0){
+			//	console.log("VM ", vmid_list[i], "is ACTIVE");
+			//}
+			//else{
+			//	console.log("VM: ", vmid_list[i], "is DEAD");
+			//}
+		});
+
+		//This doesn't work at all
+		//console.log("VM STATUS: ", vmid_list[i], vm_status);
+
 
 
 		args += '"notes":"' + notes + '"';
@@ -146,7 +155,7 @@ async function parse_id(res){
 
 	}
 	new_text = '[ ' + text + ']';
-	console.log("TEXT: ", text[1]);
+	console.log("SENT: ", text[1]);
 	sendfunc(new_text, res);
 }
 app.get('/test', (req, res) => {
