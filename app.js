@@ -94,7 +94,6 @@ async function parse_id(res){
 		commands.push(command);
 	}
 	for(i=0; i < commands.length; i++){
-		let vm_status = await execute_vmid('ps aux | grep -i "\-id ' + vmid_list[i] + '" | grep kvm');
 		let args = '';
 		let notes = "";
 		vmid = await execute_vmid(commands[i]);
@@ -105,13 +104,7 @@ async function parse_id(res){
 			if(index[0] != '#'){
 				word = index.slice(0, index.indexOf(":"));
 				value = index.slice(index.indexOf(":")+2)
-				if( j <= config.length-2 ){
-					args += '"' +  word.toString() + '"' + ':' + '"' + value.toString() + '"' + ',\n';
-				}
-				else{
-					args += '"' + word.toString() + '"' + ':' + '"' + value.toString() + '"';
-
-				}
+				args += '"' +  word.toString() + '"' + ':' + '"' + value.toString() + '",\n';
 			}
 			else{
 				if(j == 0){
@@ -124,28 +117,19 @@ async function parse_id(res){
 			}
 		}
 
-		//command = "ps aux | grep -i \"id 102\" | grep kvm | awk \'{ print \$1 }\'";
-		command = "qm status " + vmid_list[i];
-		//console.log("COMMAND:", command);
-	
-		//This somewhat works, but only for a handful of vms
+		args += '"notes":"' + notes + '",\n';
 
-		execute_vmid(command).then( (result) => {
-			console.log("VM " ,vmid_list[i], result);
-			//if(result.length > 0){
-			//	console.log("VM ", vmid_list[i], "is ACTIVE");
-			//}
-			//else{
-			//	console.log("VM: ", vmid_list[i], "is DEAD");
-			//}
+		await execute_vmid("ps aux | grep -i \"id " + vmid_list[i] + "\" | grep kvm | awk \'{ print \$1 }\'").then( (result) => {
+			if(result.length > 4) {
+				console.log("VM: ", vmid_list[i], "is ALIVE");
+				args += '"is_active":"1"'
+			}
+			else{
+				console.log("VM: ", vmid_list[i], "is DEAD");
+				args += '"is_active":"0"'
+			}
 		});
 
-		//This doesn't work at all
-		//console.log("VM STATUS: ", vmid_list[i], vm_status);
-
-
-
-		args += '"notes":"' + notes + '"';
 		if(i < (commands.length - 1)){
 			text += '{ "id": "' + vmid_list[i].toString() + '",' + args + '\n},\n';
 		}
@@ -155,7 +139,7 @@ async function parse_id(res){
 
 	}
 	new_text = '[ ' + text + ']';
-	console.log("SENT: ", text[1]);
+	console.log("SENT");
 	sendfunc(new_text, res);
 }
 app.get('/test', (req, res) => {
