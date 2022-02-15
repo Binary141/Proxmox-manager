@@ -54,8 +54,6 @@ async function execute_vmid(command){
 			privateKey: readFileSync(privKey, 'utf8')
 		}).then(function() {
 			ssh.execCommand(command).then(function(result) {
-				//console.log("STDOUT: " + result.stdout);
-				//console.log('STDERR: ' + result.stderr)
 				resolve(result.stdout);
 			})
 		})
@@ -96,26 +94,60 @@ async function parse_id(res){
 		commands.push(command);
 	}
 	for(i=0; i < commands.length; i++){
-		args = '';
+		let vm_status = execute_vmid('ps aux | grep -i "\-id ' + vmid_list[i] + '" | grep kvm');
+		let args = '';
+		let notes = "";
 		vmid = await execute_vmid(commands[i]);
 		config = vmid.split(/\r\n|\n\r|\n|\r/);
 
 		for(j=0; j < config.length; j++){
 			index = config[j];
-			word = index.slice(0, index.indexOf(":"));
-			value = index.slice(index.indexOf(":")+2)
-			if( j <= config.length-2 ){
-				args += '"' +  word.toString() + '"' + ':' + '"' + value.toString() + '"' + ',';
+			if(index[0] != '#'){
+				word = index.slice(0, index.indexOf(":"));
+				value = index.slice(index.indexOf(":")+2)
+				if( j <= config.length-2 ){
+					args += '"' +  word.toString() + '"' + ':' + '"' + value.toString() + '"' + ',\n';
+				}
+				else{
+					args += '"' + word.toString() + '"' + ':' + '"' + value.toString() + '"';
+
+				}
 			}
 			else{
-				args += '"' + word.toString() + '"' + ':' + '"' +  value.toString() + '"';
+				//args += '"notes"' + ':' + '"' + index + '"';
+				if(j == 0){
+					notes += index.slice(1);
+				}
+				else{
+					notes += ',' + index.slice(1);
 
+				}
 			}
+
 		}
-		text += '[ "id": ' + vmid_list[i].toString() + ',' + args + ']';
+
+		console.log("VM Status: ", Promise.resolve(vm_status));
+
+		if(vm_status.length > 0) {
+			//console.log("VM: ", vmid_list[i], "is ACTIVE");
+		}
+		else{
+			//console.log("VM: ", vmid_list[i], "is DEAD");
+		}
+
+
+		args += '"notes":"' + notes + '"';
+		if(i < (commands.length - 1)){
+			text += '{ "id": "' + vmid_list[i].toString() + '",' + args + '\n},\n';
+		}
+		else{
+			text += '{ "id": "' + vmid_list[i].toString() + '",' + args + '\n}\n';
+		}
+
 	}
+	new_text = '[ ' + text + ']';
 	console.log("TEXT: ", text[1]);
-	sendfunc(text, res);
+	sendfunc(new_text, res);
 }
 app.get('/test', (req, res) => {
 	console.log("Request");

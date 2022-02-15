@@ -138,63 +138,72 @@ function load_urls(){
 		template_table.innerHTML = ''; //clears template dropdown list to not keep duplicating upon new requests
 		clear_table(vm_table); //clears running vm table to not keep duplicating upon new requests
 		clear_table(stopped_vm_table);//clears stopped vm table to not keep duplicating upon new requests
+		console.log("HERE: ", response[0]);
 		response.json().then(function (data) {
-			console.log('data: ', data);
-			for(i=1; i<data.length; i++){ //loops through each row of JSON sent from server
+			for(i=0; i<data.length; i++){ //loops through each row of JSON sent from server
+				curr_vm = data[i];
 				appendedstring = "";
-				console.log("data[i]: ", data[i]);
+				//console.log("data[i] id: ", data[i].id);
 				tr = document.createElement("tr");
-				splitdata = String(data[i].split("\t")).replace(" ", "");
-				temp_list = [];
 
-				for(j=0; j<splitdata.length; j++){ //loops through each character of a row to parse data
-					if(splitdata[j] != " "){ //add the character to string if it hasn't hit a delimiter (In this case it is any whitespace)
-						appendedstring += splitdata[j];
-					}
-					else {
-						if(appendedstring != "") { //once the delimiter has been hit, make a new td element with the string text added to it, and appended to temp_list for later use. Then clear the string to add the next set of characters
-							if(temp_list.length == 0 && i == data.length-2){
-								last_vmid = appendedstring;
-								console.log("LAST ID: ", last_vmid);
-								cloneVm.id = last_vmid;
-							}
-							td = document.createElement("td");
-							tdtext = document.createTextNode(appendedstring);
-							td.appendChild(tdtext);
-							tr.appendChild(td);
-							temp_list.push(appendedstring);
-							appendedstring = "";
-						}
-						else{
-							appendedstring = "";
-						}
-					}
-				} // end of for j loop
-				if(temp_list[2] != undefined){ //make sure that the vm at that index exists and is valid. Weird behavior exists when cloning a vm in another instance and reloads on a different instance
-					temp_vm_name = temp_list[1];
-					if(temp_vm_name.slice(0,10) === "Copy-of-VM"){
-						if(temp_list[2] == "running"){
-							create_running_button(tr, vm_table); //creates a button in the running vm table with the onclick event to turn vm off
-						}
-						else if(temp_list[2] == "stopped"){
-							create_stopped_button(tr, stopped_vm_table);//creates a button in the stopped vm table with the onclick event to turn vm off
-						}
-					}
-					else if(temp_vm_name.toUpperCase().includes("TEMPLATE")){
-						let option = document.createElement("option");
-						option.vmid = temp_list[0];
-						option.text = temp_list[1];
-						template_table.add(option); //add vm name to template drop down selection
-					}
-					else{
-						if(temp_list[2] == "running"){
-							create_running_button(tr, vm_table);
-						}
-						else if(temp_list[2] == "stopped"){
-							create_stopped_button(tr, stopped_vm_table);
-						}
-					}
-				} //end of if(temp_list[2] != undefined){ 
+				if(curr_vm.template == null){ //the template field is not inserted into the config file if vm is not a template
+					console.log('VM ', curr_vm.id, 'is not a template');
+				}
+				else{
+					console.log('VM ', curr_vm.id, 'is a template');
+
+				}
+				//splitdata = String(data[i].split("\t")).replace(" ", "");
+				//temp_list = [];
+
+				//for(j=0; j<splitdata.length; j++){ //loops through each character of a row to parse data
+				//	if(splitdata[j] != " "){ //add the character to string if it hasn't hit a delimiter (In this case it is any whitespace)
+				//		appendedstring += splitdata[j];
+				//	}
+				//	else {
+				//		if(appendedstring != "") { //once the delimiter has been hit, make a new td element with the string text added to it, and appended to temp_list for later use. Then clear the string to add the next set of characters
+				//			if(temp_list.length == 0 && i == data.length-2){
+				//				last_vmid = appendedstring;
+				//				console.log("LAST ID: ", last_vmid);
+				//				cloneVm.id = last_vmid;
+				//			}
+				//			td = document.createElement("td");
+				//			tdtext = document.createTextNode(appendedstring);
+				//			td.appendChild(tdtext);
+				//			tr.appendChild(td);
+				//			temp_list.push(appendedstring);
+				//			appendedstring = "";
+				//		}
+				//		else{
+				//			appendedstring = "";
+				//		}
+				//	}
+				//} // end of for j loop
+				//if(temp_list[2] != undefined){ //make sure that the vm at that index exists and is valid. Weird behavior exists when cloning a vm in another instance and reloads on a different instance
+				//	temp_vm_name = temp_list[1];
+				//	if(temp_vm_name.slice(0,10) === "Copy-of-VM"){
+				//		if(temp_list[2] == "running"){
+				//			create_running_button(tr, vm_table); //creates a button in the running vm table with the onclick event to turn vm off
+				//		}
+				//		else if(temp_list[2] == "stopped"){
+				//			create_stopped_button(tr, stopped_vm_table);//creates a button in the stopped vm table with the onclick event to turn vm off
+				//		}
+				//	}
+				//	else if(temp_vm_name.toUpperCase().includes("TEMPLATE")){
+				//		let option = document.createElement("option");
+				//		option.vmid = temp_list[0];
+				//		option.text = temp_list[1];
+				//		template_table.add(option); //add vm name to template drop down selection
+				//	}
+				//	else{
+				//		if(temp_list[2] == "running"){
+				//			create_running_button(tr, vm_table);
+				//		}
+				//		else if(temp_list[2] == "stopped"){
+				//			create_stopped_button(tr, stopped_vm_table);
+				//		}
+				//	}
+				//} //end of if(temp_list[2] != undefined){ 
 			} //end of for(i) loop
 
 			for(let i=1; i < stopped_vm_table.rows.length; i++){ //creates the edit button for stopped vms
