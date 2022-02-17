@@ -13,8 +13,29 @@ var cloneVm = document.getElementById("cloneVm");
 cloneVm.onclick = function(){
 	if(template_table.value != ""){
 		let template_vm_id = template_table[template_table.selectedIndex].vmid
+		let vmids = [];
+		let clone_id;
 
-		data = "id=" + template_vm_id + "&newVmId=" + (parseInt(cloneVm.id) + 1);
+		for(i = 1; i < vm_table.rows.length; i++){//row in vm_table.rows){
+			vmids.push(vm_table.rows[i].cells[0].innerText);
+		}
+		for(i = 1; i < stopped_vm_table.rows.length; i++){//row in vm_table.rows){
+			vmids.push(stopped_vm_table.rows[i].cells[0].innerText);
+		}
+		for(i=0; i < template_table.length; i++){
+			vmids.push(template_table[i].id);
+		}
+		console.log("IDS: ", vmids);
+
+		for(i = 100; i <= 999; i++){
+			if(!vmids.includes(String(i))){
+				//console.log("ID: ", i);
+				clone_id = i;
+				break;
+			}
+		}
+
+		data = "id=" + template_vm_id + "&newVmId=" + clone_id;
 		console.log("DATA: ", data);
 		if(confirm("Are you sure you want to clone the vm " + template_vm_id)){
 
@@ -35,13 +56,14 @@ cloneVm.onclick = function(){
 
 function change_state(id, url){
 	data = "id=" + id;
+	console.log("DATA: ", data);
 	fetch(url, {
 		method: 'POST',
 		body: data,
 		headers: {'Content-type': 'application/x-www-form-urlencoded'},
 	}).then(function(response){
 		response.json().then(function (data) {
-			if(data == ''){
+			if(data == '200'){
 				load_urls();
 			}
 		})
@@ -71,7 +93,7 @@ function edit_vm(that){ // that is the 'this' for the edit button
 				headers: {'Content-type': 'application/x-www-form-urlencoded'},
 			}).then(function(response){
 				response.json().then(function (data) {
-					if(data[0].includes("update VM")){
+					if(data == '200'){//[0].includes("update VM")){
 						load_urls();
 					}
 				})
@@ -90,12 +112,12 @@ function edit_vm(that){ // that is the 'this' for the edit button
 	}
 }	
 
-function create_running_button(tr, vm_table){
+function create_running_button(tr, vm_table, vm_id){
 	running_td = document.createElement("td");
 	running_button = document.createElement("button");
 	running_button.innerHTML = 'running';
-	running_button.id = temp_vm_name;
-	running_button.vmid = temp_list[0];
+	running_button.id = vm_id;
+	running_button.vmid = vm_id;
 	running_button.style.background = "Green";
 	running_button.onclick = function(){
 		if(confirm("Are you sure you want to stop the vm " + this.id)){
@@ -107,12 +129,12 @@ function create_running_button(tr, vm_table){
 	vm_table.appendChild(tr);
 }
 
-function create_stopped_button(tr, stopped_vm_table){
+function create_stopped_button(tr, stopped_vm_table, vm_id){
 	stopped_td = document.createElement("td");
 	stopped_button = document.createElement("button");
 	stopped_button.innerHTML = 'stopped';
-	stopped_button.id = temp_vm_name;
-	stopped_button.vmid = temp_list[0];
+	stopped_button.id = vm_id;
+	stopped_button.vmid = vm_id;
 	stopped_button.style.background = "Red";
 	stopped_button.onclick = function(){
 		if(confirm("Are you sure you want to start the vm " + this.id)){
@@ -138,7 +160,6 @@ function load_urls(){
 		template_table.innerHTML = ''; //clears template dropdown list to not keep duplicating upon new requests
 		clear_table(vm_table); //clears running vm table to not keep duplicating upon new requests
 		clear_table(stopped_vm_table);//clears stopped vm table to not keep duplicating upon new requests
-		console.log("HERE: ", response[0]);
 		response.json().then(function (data) {
 			for(i=0; i<data.length; i++){ //loops through each row of JSON sent from server
 				curr_vm = data[i];
@@ -147,12 +168,54 @@ function load_urls(){
 				tr = document.createElement("tr");
 
 				if(curr_vm.template == null){ //the template field is not inserted into the config file if vm is not a template
-					console.log('VM ', curr_vm.id, 'is not a template');
+					vm_id_tr = document.createElement("td");
+					vm_name_tr = document.createElement("td");
+					vm_mem_tr = document.createElement("td");
+					vm_status_tr = document.createElement("td");
+					vm_disk_size_tr = document.createElement("td");
+
+					vm_id = document.createTextNode(curr_vm.id);
+					vm_id_tr.appendChild(vm_id);
+
+					vm_name = document.createTextNode(curr_vm.name);
+					vm_name_tr.appendChild(vm_name);
+
+					vm_memory = document.createTextNode(curr_vm.memory);
+					vm_mem_tr.appendChild(vm_memory);
+
+					vm_disk_size = document.createTextNode(curr_vm.scsi0.split(',')[1].split('=')[1]);
+					vm_disk_size_tr.appendChild(vm_disk_size);
+
+					tr.appendChild(vm_id_tr);
+					tr.appendChild(vm_name_tr);
+					tr.appendChild(vm_mem_tr);
+					tr.appendChild(vm_disk_size_tr);
+					tr.id = curr_vm.id;
+
+					if(curr_vm.is_active == 1){
+						vm_status = document.createTextNode("Running");
+						vm_status_tr.appendChild(vm_status);
+						//console.log("TR: ", tr);
+						create_running_button(tr, vm_table, curr_vm.id);
+					}
+					else{
+						vm_status = document.createTextNode("Stopped");
+						vm_status_tr.appendChild(vm_status);
+						//console.log("TR: ", tr);
+						create_stopped_button(tr, stopped_vm_table, curr_vm.id);
+					}
 				}
 				else{
-					console.log('VM ', curr_vm.id, 'is a template');
+					//console.log('VM ', curr_vm.id, 'is a template');
+						let vm_template = document.createElement("option");
+						vm_template.vmid = curr_vm.id;
+						vm_template.id = curr_vm.id;
+						vm_template.text = curr_vm.name;
+						template_table.add(vm_template); //add vm name to template drop down selection
 
 				}
+
+
 				//splitdata = String(data[i].split("\t")).replace(" ", "");
 				//temp_list = [];
 
@@ -167,10 +230,10 @@ function load_urls(){
 				//				console.log("LAST ID: ", last_vmid);
 				//				cloneVm.id = last_vmid;
 				//			}
-				//			td = document.createElement("td");
-				//			tdtext = document.createTextNode(appendedstring);
-				//			td.appendChild(tdtext);
-				//			tr.appendChild(td);
+				//			td = document.createelement("td");
+				//			tdtext = document.createtextnode(appendedstring);
+				//			td.appendchild(tdtext);
+				//			tr.appendchild(td);
 				//			temp_list.push(appendedstring);
 				//			appendedstring = "";
 				//		}

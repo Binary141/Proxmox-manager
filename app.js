@@ -37,29 +37,26 @@ app.all('/*', function(req, res, next) {
 
 
 function sendfunc(data, res) {
+	console.log("DATA: ", data)
 	res.send(data); //JSON.stringify(data));
 }
 
-async function getHostStats(host, res, command) {
-	const results = await executeSshCommand(host, command);
-	console.log(results)
-	sendfunc(results,res);
+async function execute_vmid(command){
+	await ssh.connect({
+		host: v_host,
+		username: server_username,
+		privateKey: readFileSync(privKey, 'utf8')
+	})
+	const result = await ssh.execCommand(command);
+	return result.stdout;
 }
 
-async function execute_vmid(command){
-	return new Promise((resolve, reject) => {
-		ssh.connect({
-			host: v_host,
-			username: server_username,
-			privateKey: readFileSync(privKey, 'utf8')
-		}).then(function() {
-			ssh.execCommand(command).then(function(result) {
-				resolve(result.stdout);
-			})
-		})
-	
-	})
-
+async function getHostStats(res, command) {
+	console.log("HOSTSTATS: ", command);
+	const results = await execute_vmid(command);
+	console.log(results)
+	res.send('200');
+	//sendfunc(results,res);
 }
 
 async function parse_id(res){
@@ -87,7 +84,7 @@ async function parse_id(res){
 			vmid_list.push(temp[i].slice(1))
 		}
 	}
-	console.log("VMID: ", vmid_list);
+	//console.log("VMID: ", vmid_list);
 
 	for(i = 0; i < vmid_list.length; i++){
 		command = 'cat /etc/pve/nodes/pve/qemu-server/' + vmid_list[i] + '.conf';
@@ -121,11 +118,11 @@ async function parse_id(res){
 
 		await execute_vmid("ps aux | grep -i \"id " + vmid_list[i] + "\" | grep kvm | awk \'{ print \$1 }\'").then( (result) => {
 			if(result.length > 4) {
-				console.log("VM: ", vmid_list[i], "is ALIVE");
+				//console.log("VM: ", vmid_list[i], "is ALIVE");
 				args += '"is_active":"1"'
 			}
 			else{
-				console.log("VM: ", vmid_list[i], "is DEAD");
+				//console.log("VM: ", vmid_list[i], "is DEAD");
 				args += '"is_active":"0"'
 			}
 		});
@@ -150,22 +147,22 @@ app.get('/test', (req, res) => {
 app.post('/startvm', (req, res) => {
 	start_command = "qm start " + req.body.id;
 	console.log("start command", start_command);
-	getHostStats(v_host, res, start_command);
+	getHostStats(res, start_command);
 })
 app.post('/stopvm', (req, res) => {
-	start_command = "qm stop " + req.body.id;
-	console.log("stop command", start_command);
-	getHostStats(v_host, res, start_command);
+	stop_command = "qm stop " + req.body.id;
+	console.log("stop command:", stop_command);
+	getHostStats(res, stop_command);
 })
 app.post('/clonevm', (req, res) => {
 	start_command = "qm clone " + req.body.id + " " + req.body.newVmId + " --full"
 	console.log("stop command", start_command);
-	getHostStats(v_host, res, start_command);
+	getHostStats(res, start_command);
 })
 app.put('/renamevm', (req, res) => {
 	start_command = "qm set " + req.body.vmid + " --name " + req.body.newName;
 	console.log("rename command", start_command);
-	getHostStats(v_host, res, start_command);
+	getHostStats(res, start_command);
 })
 app.listen(port, function() {
 	console.log('the server is listening on ', port);
