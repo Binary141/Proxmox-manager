@@ -27,9 +27,8 @@ cloneVm.onclick = function(){
 		}
 		console.log("IDS: ", vmids);
 
-		for(i = 100; i <= 999; i++){
-			if(!vmids.includes(String(i))){
-				//console.log("ID: ", i);
+		for(i = 100; i <= 999; i++){ //finds the lowest number that isn't in the list of vmids
+			if(!vmids.includes(String(i))){ //if the number is not in the list, that will be the new id of the cloned vm
 				clone_id = i;
 				break;
 			}
@@ -214,59 +213,6 @@ function load_urls(){
 						template_table.add(vm_template); //add vm name to template drop down selection
 
 				}
-
-
-				//splitdata = String(data[i].split("\t")).replace(" ", "");
-				//temp_list = [];
-
-				//for(j=0; j<splitdata.length; j++){ //loops through each character of a row to parse data
-				//	if(splitdata[j] != " "){ //add the character to string if it hasn't hit a delimiter (In this case it is any whitespace)
-				//		appendedstring += splitdata[j];
-				//	}
-				//	else {
-				//		if(appendedstring != "") { //once the delimiter has been hit, make a new td element with the string text added to it, and appended to temp_list for later use. Then clear the string to add the next set of characters
-				//			if(temp_list.length == 0 && i == data.length-2){
-				//				last_vmid = appendedstring;
-				//				console.log("LAST ID: ", last_vmid);
-				//				cloneVm.id = last_vmid;
-				//			}
-				//			td = document.createelement("td");
-				//			tdtext = document.createtextnode(appendedstring);
-				//			td.appendchild(tdtext);
-				//			tr.appendchild(td);
-				//			temp_list.push(appendedstring);
-				//			appendedstring = "";
-				//		}
-				//		else{
-				//			appendedstring = "";
-				//		}
-				//	}
-				//} // end of for j loop
-				//if(temp_list[2] != undefined){ //make sure that the vm at that index exists and is valid. Weird behavior exists when cloning a vm in another instance and reloads on a different instance
-				//	temp_vm_name = temp_list[1];
-				//	if(temp_vm_name.slice(0,10) === "Copy-of-VM"){
-				//		if(temp_list[2] == "running"){
-				//			create_running_button(tr, vm_table); //creates a button in the running vm table with the onclick event to turn vm off
-				//		}
-				//		else if(temp_list[2] == "stopped"){
-				//			create_stopped_button(tr, stopped_vm_table);//creates a button in the stopped vm table with the onclick event to turn vm off
-				//		}
-				//	}
-				//	else if(temp_vm_name.toUpperCase().includes("TEMPLATE")){
-				//		let option = document.createElement("option");
-				//		option.vmid = temp_list[0];
-				//		option.text = temp_list[1];
-				//		template_table.add(option); //add vm name to template drop down selection
-				//	}
-				//	else{
-				//		if(temp_list[2] == "running"){
-				//			create_running_button(tr, vm_table);
-				//		}
-				//		else if(temp_list[2] == "stopped"){
-				//			create_stopped_button(tr, stopped_vm_table);
-				//		}
-				//	}
-				//} //end of if(temp_list[2] != undefined){ 
 			} //end of for(i) loop
 
 			for(let i=1; i < stopped_vm_table.rows.length; i++){ //creates the edit button for stopped vms
