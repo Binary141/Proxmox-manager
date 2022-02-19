@@ -41,9 +41,8 @@ async function execute_vmid(command){
 }
 
 async function getHostStats(res, command) {
-	console.log("HOSTSTATS: ", command);
 	const results = await execute_vmid(command);
-	res.send(results);
+	res.send('200');
 }
 
 async function parse_id(res){
@@ -66,7 +65,6 @@ async function parse_id(res){
 		let notes = "";
 		vmid = await execute_vmid(commands[i]);
 		config = vmid.split(/\r\n|\n\r|\n|\r/);
-		console.log("CONFIG: ", config);
 
 		for(j=0; j < config.length; j++){
 			index = config[j];
@@ -96,7 +94,7 @@ async function parse_id(res){
 			}
 		});
 
-		if(i < (commands.length - 1)){
+		if(i < (commands.length - 1)){ //checks if i is at the end of the list, if it is a ',' is not needed for proper json
 			text += '{ "id": "' + vmid_list[i].toString() + '",' + args + '\n},\n';
 		}
 		else{
@@ -114,22 +112,22 @@ app.get('/test', (req, res) => {
 
 app.post('/startvm', (req, res) => {
 	start_command = "qm start " + req.body.id;
-	//console.log("start command", start_command);
+	console.log("start command", start_command);
 	getHostStats(res, start_command);
 })
 app.post('/stopvm', (req, res) => {
 	stop_command = "qm stop " + req.body.id;
-	//console.log("stop command:", stop_command);
+	console.log("stop command:", stop_command);
 	getHostStats(res, stop_command);
 })
 app.post('/clonevm', (req, res) => {
 	clone_command = "qm clone " + req.body.id + " " + req.body.newVmId + " --full"
-	//console.log("clone command", clone_command);
+	console.log("clone command", clone_command);
 	getHostStats(res, start_command);
 })
 app.put('/renamevm', (req, res) => {
 	rename_command = "qm set " + req.body.vmid + " --name " + req.body.newName;
-	//console.log("rename command", rename_command);
+	console.log("rename command", rename_command);
 	getHostStats(res, start_command);
 })
 app.listen(port, function() {

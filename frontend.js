@@ -84,7 +84,7 @@ function edit_vm(that){ // that is the 'this' for the edit button
 	}
 	else if(that.innerHTML == "SAVE"){
 		if(confirm("Do you want to save these settings?")){
-			data = "vmid=" + that.vmid + "&newName=" + stopped_vm_table.rows[that.row].cells[1].querySelector('input').value;
+			data = "vmid=" + that.vmid + "&newName=\"" + stopped_vm_table.rows[that.row].cells[1].querySelector('input').value + "\"";
 			that.innerHTML = "EDIT";
 			fetch(RENAME_VM_URL, {
 				method: 'PUT',
@@ -111,39 +111,35 @@ function edit_vm(that){ // that is the 'this' for the edit button
 	}
 }	
 
-function create_running_button(tr, vm_table, vm_id){
-	running_td = document.createElement("td");
-	running_button = document.createElement("button");
-	running_button.innerHTML = 'running';
-	running_button.id = vm_id;
-	running_button.vmid = vm_id;
-	running_button.style.background = "Green";
-	running_button.onclick = function(){
-		if(confirm("Are you sure you want to stop the vm " + this.id)){
-			change_state(this.vmid, STOP_VM_URL);
-		};
+function create_status_button(tr, vm_table, vm_id, vm_status){
+	status_td = document.createElement("td");
+	status_button = document.createElement("button");
+	status_button.innerHTML = vm_status;
+	status_button.id = vm_id;
+	status_button.vmid = vm_id;
+	if(vm_status == "running"){
+		status_button.style.background = "Green";
+
+		status_button.onclick = function(){
+			if(confirm("Are you sure you want to stop the vm " + this.id)){
+				change_state(this.vmid, STOP_VM_URL);
+			};
+		}
 	}
-	running_td.appendChild(running_button);
-	tr.appendChild(running_td);
+	if(vm_status == "stopped"){
+		status_button.style.background = "Red";
+
+		status_button.onclick = function(){
+			if(confirm("Are you sure you want to start the vm " + this.id)){
+				change_state(this.vmid, START_VM_URL);
+			};
+		}
+	}
+	status_td.appendChild(status_button);
+	tr.appendChild(status_td);
 	vm_table.appendChild(tr);
 }
 
-function create_stopped_button(tr, stopped_vm_table, vm_id){
-	stopped_td = document.createElement("td");
-	stopped_button = document.createElement("button");
-	stopped_button.innerHTML = 'stopped';
-	stopped_button.id = vm_id;
-	stopped_button.vmid = vm_id;
-	stopped_button.style.background = "Red";
-	stopped_button.onclick = function(){
-		if(confirm("Are you sure you want to start the vm " + this.id)){
-			change_state(this.vmid, START_VM_URL);
-		};
-	}
-	stopped_td.appendChild(stopped_button);
-	tr.appendChild(stopped_td);
-	stopped_vm_table.appendChild(tr);
-}
 
 function clear_table(table){
 	for(let i = table.rows.length; i > 1; i--){
@@ -160,52 +156,44 @@ function load_urls(){
 		clear_table(vm_table); //clears running vm table to not keep duplicating upon new requests
 		clear_table(stopped_vm_table);//clears stopped vm table to not keep duplicating upon new requests
 		response.json().then(function (data) {
-			for(i=0; i<data.length; i++){ //loops through each row of JSON sent from server
+			for(i=0; i<data.length - 1; i++){ //loops through each row of JSON sent from server
 				curr_vm = data[i];
 				appendedstring = "";
-				//console.log("data[i] id: ", data[i].id);
+
 				tr = document.createElement("tr");
 
 				if(curr_vm.template == null){ //the template field is not inserted into the config file if vm is not a template
-					vm_id_tr = document.createElement("td");
-					vm_name_tr = document.createElement("td");
-					vm_mem_tr = document.createElement("td");
-					vm_status_tr = document.createElement("td");
-					vm_disk_size_tr = document.createElement("td");
 
-					vm_id = document.createTextNode(curr_vm.id);
-					vm_id_tr.appendChild(vm_id);
+					for(json_key in curr_vm){
+						if(['id','name','memory','scsi0'].includes(json_key)){
+							vm_id_tr = document.createElement("td");
+							vm_id = document.createTextNode(curr_vm[json_key]);
+							switch(json_key){
+								case "memory":
+									vm_id = document.createTextNode(curr_vm.name);
+									break;
+								case "name":
+									vm_id = document.createTextNode(curr_vm.memory);
+									break;
+								case "scsi0":
+									vm_id = document.createTextNode(curr_vm[json_key].split(',')[1].split('=')[1]);
+									break;
+							}
 
-					vm_name = document.createTextNode(curr_vm.name);
-					vm_name_tr.appendChild(vm_name);
 
-					vm_memory = document.createTextNode(curr_vm.memory);
-					vm_mem_tr.appendChild(vm_memory);
-
-					vm_disk_size = document.createTextNode(curr_vm.scsi0.split(',')[1].split('=')[1]);
-					vm_disk_size_tr.appendChild(vm_disk_size);
-
-					tr.appendChild(vm_id_tr);
-					tr.appendChild(vm_name_tr);
-					tr.appendChild(vm_mem_tr);
-					tr.appendChild(vm_disk_size_tr);
-					tr.id = curr_vm.id;
-
+							vm_id_tr.appendChild(vm_id);
+							tr.appendChild(vm_id_tr);
+							tr.id = curr_vm.id;
+						}
+					}
 					if(curr_vm.is_active == 1){
-						vm_status = document.createTextNode("Running");
-						vm_status_tr.appendChild(vm_status);
-						//console.log("TR: ", tr);
-						create_running_button(tr, vm_table, curr_vm.id);
+						create_status_button(tr, vm_table, curr_vm.id, "running");
 					}
 					else{
-						vm_status = document.createTextNode("Stopped");
-						vm_status_tr.appendChild(vm_status);
-						//console.log("TR: ", tr);
-						create_stopped_button(tr, stopped_vm_table, curr_vm.id);
+						create_status_button(tr, stopped_vm_table, curr_vm.id, "stopped");
 					}
 				}
 				else{
-					//console.log('VM ', curr_vm.id, 'is a template');
 						let vm_template = document.createElement("option");
 						vm_template.vmid = curr_vm.id;
 						vm_template.id = curr_vm.id;
