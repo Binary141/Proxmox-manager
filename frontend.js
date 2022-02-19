@@ -72,14 +72,12 @@ function change_state(id, url){
 function edit_vm(that){ // that is the 'this' for the edit button
 	if(that.innerHTML == "EDIT"){
 		that.innerHTML = "SAVE";
-		for(var cellindex = 1; cellindex < stopped_vm_table.rows[that.row].cells.length-3; cellindex++){ //converts td into editable field with the values preset that can be changed
-			if(cellindex != 2){
-				input_element = document.createElement("input");
-				input_element.value = stopped_vm_table.rows[that.row].cells[cellindex].innerText;
-				temp_td = document.createElement("td");
-				temp_td.appendChild(input_element);
-				stopped_vm_table.rows[that.row].cells[cellindex].replaceWith(temp_td);
-			}
+		for(var cellindex = 1; cellindex < 4; cellindex++){ //converts td into editable field with the values preset that can be changed
+			input_element = document.createElement("input");
+			input_element.value = stopped_vm_table.rows[that.row].cells[cellindex].innerText;
+			temp_td = document.createElement("td");
+			temp_td.appendChild(input_element);
+			stopped_vm_table.rows[that.row].cells[cellindex].replaceWith(temp_td);
 		}
 	}
 	else if(that.innerHTML == "SAVE"){
@@ -100,12 +98,10 @@ function edit_vm(that){ // that is the 'this' for the edit button
 		}
 		else{ //revert back to table and 'EDIT' text in button on cancel
 			that.innerHTML = "EDIT";
-			for(var cellindex = 1; cellindex < stopped_vm_table.rows[that.row].cells.length-3; cellindex++){ //changes the input field for the editable fields back into a regular text td
-				if(cellindex != 2){
-					temp_td = document.createElement("td");
-					temp_td.innerText = stopped_vm_table.rows[that.row].cells[cellindex].querySelector('input').value;
-					stopped_vm_table.rows[that.row].cells[cellindex].replaceWith(temp_td);
-				}
+			for(var cellindex = 1; cellindex < 4; cellindex++){ //changes the input field for the editable fields back into a regular text td
+				temp_td = document.createElement("td");
+				temp_td.innerText = stopped_vm_table.rows[that.row].cells[cellindex].querySelector('input').value;
+				stopped_vm_table.rows[that.row].cells[cellindex].replaceWith(temp_td);
 			}
 		}
 	}
@@ -147,6 +143,7 @@ function clear_table(table){
 	}
 }
 function load_urls(){
+	const wanted_json = ['id','name','memory','scsi0']
 	fetch(REQUEST_URL, {
 		method: 'GET',
 		headers: {},
@@ -165,7 +162,7 @@ function load_urls(){
 				if(curr_vm.template == null){ //the template field is not inserted into the config file if vm is not a template
 
 					for(json_key in curr_vm){
-						if(['id','name','memory','scsi0'].includes(json_key)){
+						if(wanted_json.includes(json_key)){
 							vm_id_tr = document.createElement("td");
 							vm_id = document.createTextNode(curr_vm[json_key]);
 							switch(json_key){
@@ -180,11 +177,41 @@ function load_urls(){
 									break;
 							}
 
-
 							vm_id_tr.appendChild(vm_id);
 							tr.appendChild(vm_id_tr);
 							tr.id = curr_vm.id;
 						}
+					}
+
+					if(curr_vm.args){
+						vm_id_tr = document.createElement("td");
+						vm_id = document.createTextNode((parseInt(curr_vm.args.split(':')[1])+5900));
+						vm_id_tr.appendChild(vm_id);
+						tr.appendChild(vm_id_tr);
+						tr.id = curr_vm.id;
+					}
+					else if(!curr_vm.args){ //if no args are present, create a blank td. Used for the VNC port
+						vm_id_tr = document.createElement("td");
+						vm_id = document.createTextNode("");
+						vm_id_tr.appendChild(vm_id);
+						tr.appendChild(vm_id_tr);
+						tr.id = curr_vm.id;
+						
+					}
+					if(curr_vm.notes){
+						vm_id_tr = document.createElement("td");
+						vm_id = document.createTextNode(curr_vm.notes);
+						vm_id_tr.appendChild(vm_id);
+						tr.appendChild(vm_id_tr);
+						tr.id = curr_vm.id;
+					}
+					else if(!curr_vm.notes){ //if no args are present, create a blank td. Used for the VNC port
+						vm_id_tr = document.createElement("td");
+						vm_id = document.createTextNode("");
+						vm_id_tr.appendChild(vm_id);
+						tr.appendChild(vm_id_tr);
+						tr.id = curr_vm.id;
+						
 					}
 					if(curr_vm.is_active == 1){
 						create_status_button(tr, vm_table, curr_vm.id, "running");

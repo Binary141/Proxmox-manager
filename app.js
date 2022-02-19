@@ -121,14 +121,14 @@ app.post('/stopvm', (req, res) => {
 	getHostStats(res, stop_command);
 })
 app.post('/clonevm', (req, res) => {
-	clone_command = "qm clone " + req.body.id + " " + req.body.newVmId + " --full"
+	clone_command = "qm clone " + req.body.id + " " + req.body.newVmId// + " --full"
 	console.log("clone command", clone_command);
-	getHostStats(res, start_command);
+	getHostStats(res, clone_command);
 })
 app.put('/renamevm', (req, res) => {
-	rename_command = "qm set " + req.body.vmid + " --name " + req.body.newName;
+	rename_command = "qm set " + req.body.vmid + " --name " + req.body.newName + " --memory " + req.body.newMemory;
 	console.log("rename command", rename_command);
-	getHostStats(res, start_command);
+	getHostStats(res, rename_command);
 })
 app.listen(port, function() {
 	console.log('the server is listening on ', port);
