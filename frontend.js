@@ -16,6 +16,7 @@ cloneVm.onclick = function(){
 		let vmids = [];
 		let clone_id;
 
+		// ------ Finds all the vm id numbers from all the tables
 		for(i = 1; i < vm_table.rows.length; i++){//row in vm_table.rows){
 			vmids.push(vm_table.rows[i].cells[0].innerText);
 		}
@@ -25,6 +26,8 @@ cloneVm.onclick = function(){
 		for(i=0; i < template_table.length; i++){
 			vmids.push(template_table[i].id);
 		}
+		// ------------------
+
 		console.log("IDS: ", vmids);
 
 		for(i = 100; i <= 999; i++){ //finds the lowest number that isn't in the list of vmids
@@ -61,11 +64,9 @@ function change_state(id, url){
 		body: data,
 		headers: {'Content-type': 'application/x-www-form-urlencoded'},
 	}).then(function(response){
-		response.json().then(function (data) {
-			if(data == '200'){
-				load_urls();
-			}
-		})
+		if(response.status == 200){
+			load_urls();
+		}
 	});
 }
 
@@ -79,21 +80,31 @@ function edit_vm(that){ // that is the 'this' for the edit button
 			temp_td.appendChild(input_element);
 			stopped_vm_table.rows[that.row].cells[cellindex].replaceWith(temp_td);
 		}
+		input_element = document.createElement("input");
+		input_element.value = stopped_vm_table.rows[that.row].cells[5].innerText;
+		temp_td = document.createElement("td");
+		temp_td.appendChild(input_element);
+		stopped_vm_table.rows[that.row].cells[5].replaceWith(temp_td);
 	}
 	else if(that.innerHTML == "SAVE"){
 		if(confirm("Do you want to save these settings?")){
-			data = "vmid=" + that.vmid + "&newName=\"" + stopped_vm_table.rows[that.row].cells[1].querySelector('input').value + "\"";
-			that.innerHTML = "EDIT";
+			data = "vmid=" + that.vmid + "&newName=\"" + stopped_vm_table.rows[that.row].cells[1].querySelector('input').value + "\"" + 
+				"&newMemory=" + stopped_vm_table.rows[that.row].cells[2].querySelector('input').value +
+				"&newNote=" + "'" + stopped_vm_table.rows[that.row].cells[5].querySelector('input').value + "'";
+			console.log("DATA: ", data)
+
 			fetch(RENAME_VM_URL, {
 				method: 'PUT',
 				body: data,
 				headers: {'Content-type': 'application/x-www-form-urlencoded'},
 			}).then(function(response){
-				response.json().then(function (data) {
-					if(data == '200'){//[0].includes("update VM")){
-						load_urls();
-					}
-				})
+				console.log("RESPONSE STATUS: ", response.status);
+				if(response.status == 400){
+					alert("Name is invalid")
+				}
+				else if(response.status == 200){
+					load_urls();
+				}
 			});
 		}
 		else{ //revert back to table and 'EDIT' text in button on cancel

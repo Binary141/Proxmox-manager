@@ -42,7 +42,11 @@ async function execute_vmid(command){
 
 async function getHostStats(res, command) {
 	const results = await execute_vmid(command);
-	res.send('200');
+	res.sendStatus(200);
+}
+
+async function ssh_command(command) {
+	const results = await execute_vmid(command);
 }
 
 async function parse_id(res){
@@ -126,9 +130,22 @@ app.post('/clonevm', (req, res) => {
 	getHostStats(res, clone_command);
 })
 app.put('/renamevm', (req, res) => {
-	rename_command = "qm set " + req.body.vmid + " --name " + req.body.newName + " --memory " + req.body.newMemory;
-	console.log("rename command", rename_command);
-	getHostStats(res, rename_command);
+	path = "/etc/pve/nodes/pve/qemu-server/"
+	if(req.body.newName.includes(' ')){
+		res.sendStatus(400);
+
+	}
+	else{
+		rename_command = "qm set " + req.body.vmid + " --name " + req.body.newName + " --memory " + req.body.newMemory;
+		if(req.body.newNote){
+			note = req.body.newNote.slice(1,req.body.newNote.length - 1);
+			note_command = "sed -i '/^#/d' " + path + req.body.vmid + ".conf; echo \"#" + note + "\" >> " + path + req.body.vmid + ".conf";
+			console.log("NOTES: ", note_command);
+			ssh_command(note_command);
+		}
+		console.log("rename command", rename_command);
+		getHostStats(res, rename_command);
+	}
 })
 app.listen(port, function() {
 	console.log('the server is listening on ', port);
