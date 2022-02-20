@@ -71,7 +71,7 @@ function change_state(id, url){
 	});
 }
 
-function edit_vm(that, current_note, name_dictionary, memory_dictionary, boot_dictionary){ // that is the 'this' for the edit button
+function edit_vm(that, current_note, name_dictionary, memory_dictionary, boot_dictionary, note_dictionary){ // that is the 'this' for the edit button
 	console.log("CURRENT: ", current_note);
 	if(that.innerHTML == "EDIT"){
 		that.innerHTML = "SAVE";
@@ -90,24 +90,72 @@ function edit_vm(that, current_note, name_dictionary, memory_dictionary, boot_di
 	}
 	else if(that.innerHTML == "SAVE"){
 		if(confirm("Do you want to save these settings?")){
-			data = "vmid=" + that.vmid + "&newName=\"" + stopped_vm_table.rows[that.row].cells[1].querySelector('input').value + "\"" + 
-				"&newMemory=" + stopped_vm_table.rows[that.row].cells[2].querySelector('input').value +
-				"&newNote=" + "'" + stopped_vm_table.rows[that.row].cells[5].querySelector('input').value + "'";
+			let vm_name = stopped_vm_table.rows[that.row].cells[1].querySelector('input').value;
+			let vm_mem = stopped_vm_table.rows[that.row].cells[2].querySelector('input').value;
+			let vm_boot = stopped_vm_table.rows[that.row].cells[3].querySelector('input').value;
+			let vm_note = stopped_vm_table.rows[that.row].cells[5].querySelector('input').value;
+			data = "vmid=" + that.vmid + "&newName=\"" + vm_name + "\"" + 
+				"&newMemory=" + vm_mem +
+				"&newNote=" + "'" + vm_note + "'";
 			console.log("DATA: ", data)
 
-			fetch(RENAME_VM_URL, {
-				method: 'PUT',
-				body: data,
-				headers: {'Content-type': 'application/x-www-form-urlencoded'},
-			}).then(function(response){
-				console.log("RESPONSE STATUS: ", response.status);
-				if(response.status == 400){
-					alert("Name is invalid")
-				}
-				else if(response.status == 200){
-					load_urls();
-				}
-			});
+			//temp_td.innerText = name_dictionary[that.row];
+			if(name_dictionary[that.row] == vm_name && memory_dictionary[that.row] == vm_mem && boot_dictionary[that.row] == vm_boot){
+				//console.log("No change needed")
+				fetch(EDIT_NOTE_URL, {
+					method: 'PUT',
+					body: data,
+					headers: {'Content-type': 'application/x-www-form-urlencoded'},
+				}).then(function(response){
+					console.log("RESPONSE STATUS: ", response.status);
+					if(response.status == 200){
+						that.innerHTML = "EDIT";
+						temp_td = document.createElement("td");
+						temp_td.innerText = vm_note;
+						current_note[that.row] = vm_note;
+						stopped_vm_table.rows[that.row].cells[5].replaceWith(temp_td);
+
+					}
+					else{
+						alert("Name is invalid")
+					}
+				});
+
+				that.innerHTML = "EDIT";
+				temp_td = document.createElement("td");
+				temp_td.innerText = name_dictionary[that.row];
+				stopped_vm_table.rows[that.row].cells[1].replaceWith(temp_td);
+
+				temp_td = document.createElement("td");
+				temp_td.innerText = memory_dictionary[that.row];
+				stopped_vm_table.rows[that.row].cells[2].replaceWith(temp_td);
+
+				temp_td = document.createElement("td");
+				temp_td.innerText = boot_dictionary[that.row];
+				stopped_vm_table.rows[that.row].cells[3].replaceWith(temp_td);
+
+				temp_td = document.createElement("td");
+				temp_td.innerText = current_note[that.row];
+				stopped_vm_table.rows[that.row].cells[5].replaceWith(temp_td);
+				//create_buttons();
+
+			}
+			else{
+				fetch(RENAME_VM_URL, {
+					method: 'PUT',
+					body: data,
+					headers: {'Content-type': 'application/x-www-form-urlencoded'},
+				}).then(function(response){
+					console.log("RESPONSE STATUS: ", response.status);
+					if(response.status == 400){
+						alert("Name is invalid")
+					}
+					else if(response.status == 200){
+
+						load_urls();
+					}
+				});
+			}
 		}
 		else{ //revert back to table and 'EDIT' text in button on cancel
 			that.innerHTML = "EDIT";
@@ -234,7 +282,7 @@ function create_buttons(){
 		boot_dictionary[i] = stopped_vm_table.rows[i].cells[3].innerText;
 
 		edit_button.onclick = function(){
-			edit_vm(this, stopped_notes_dictionary, name_dictionary, memory_dictionary, boot_dictionary);
+			edit_vm(this, stopped_notes_dictionary, name_dictionary, memory_dictionary, boot_dictionary, notes_dictionary);
 		}
 
 		edit_td.appendChild(edit_button);
@@ -261,6 +309,13 @@ function create_buttons(){
 	}
 }
 
+function create_tr_item(tr, text, curr_id){
+	vm_id_tr = document.createElement("td");
+	vm_id = document.createTextNode(text);
+	vm_id_tr.appendChild(vm_id);
+	tr.appendChild(vm_id_tr);
+	tr.id = curr_vm.id;
+}
 
 function load_urls(){
 	const wanted_json = ['id','name','memory','scsi0']
@@ -304,35 +359,19 @@ function load_urls(){
 					}
 
 					if(curr_vm.args){
-						vm_id_tr = document.createElement("td");
-						vm_id = document.createTextNode((parseInt(curr_vm.args.split(':')[1])+5900));
-						vm_id_tr.appendChild(vm_id);
-						tr.appendChild(vm_id_tr);
-						tr.id = curr_vm.id;
+						create_tr_item(tr, (parseInt(curr_vm.args.split(':')[1])+5900), curr_vm.id)
 					}
 					else if(!curr_vm.args){ //if no args are present, create a blank td. Used for the VNC port
-						vm_id_tr = document.createElement("td");
-						vm_id = document.createTextNode("");
-						vm_id_tr.appendChild(vm_id);
-						tr.appendChild(vm_id_tr);
-						tr.id = curr_vm.id;
-						
+						create_tr_item(tr, "", curr_vm.id)
 					}
+
 					if(curr_vm.notes){
-						vm_id_tr = document.createElement("td");
-						vm_id = document.createTextNode(curr_vm.notes);
-						vm_id_tr.appendChild(vm_id);
-						tr.appendChild(vm_id_tr);
-						tr.id = curr_vm.id;
+						create_tr_item(tr, curr_vm.notes, curr_vm.id)
 					}
-					else if(!curr_vm.notes){ //if no args are present, create a blank td. Used for the VNC port
-						vm_id_tr = document.createElement("td");
-						vm_id = document.createTextNode("");
-						vm_id_tr.appendChild(vm_id);
-						tr.appendChild(vm_id_tr);
-						tr.id = curr_vm.id;
-						
+					else if(!curr_vm.notes){ //if no args are present, create a blank td. Used for the notes
+						create_tr_item(tr, "", curr_vm.id)
 					}
+
 					if(curr_vm.is_active == 1){
 						create_status_button(tr, vm_table, curr_vm.id, "running");
 					}
