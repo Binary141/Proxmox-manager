@@ -78,12 +78,7 @@ async function parse_id(res){
 				args += '"' +  word.toString() + '"' + ':' + '"' + value.toString() + '",\n';
 			}
 			else{
-				if(j == 0){
-					notes += index.slice(1);
-				}
-				else{
-					notes += ',' + index.slice(1);
-				}
+				notes += index.slice(1);
 			}
 		}
 
@@ -112,23 +107,23 @@ async function parse_id(res){
 app.get('/test', (req, res) => {
 	console.log("Request");
 	parse_id(res);
-})
+});
 
 app.post('/startvm', (req, res) => {
 	start_command = "qm start " + req.body.id;
 	console.log("start command", start_command);
 	getHostStats(res, start_command);
-})
+});
 app.post('/stopvm', (req, res) => {
 	stop_command = "qm stop " + req.body.id;
 	console.log("stop command:", stop_command);
 	getHostStats(res, stop_command);
-})
+});
 app.post('/clonevm', (req, res) => {
 	clone_command = "qm clone " + req.body.id + " " + req.body.newVmId// + " --full"
 	console.log("clone command", clone_command);
 	getHostStats(res, clone_command);
-})
+});
 app.put('/renamevm', (req, res) => {
 	path = "/etc/pve/nodes/pve/qemu-server/"
 	if(req.body.newName.includes(' ')){
@@ -146,7 +141,17 @@ app.put('/renamevm', (req, res) => {
 		console.log("rename command", rename_command);
 		getHostStats(res, rename_command);
 	}
-})
+});
+app.put('/editnote', (req, res) => {
+	path = "/etc/pve/nodes/pve/qemu-server/"
+	if(req.body.newNote){
+		note = req.body.newNote.slice(1,req.body.newNote.length - 1);
+		note_command = "sed -i '/^#/d' " + path + req.body.vmid + ".conf; echo \"#" + note + "\" >> " + path + req.body.vmid + ".conf";
+		console.log("NOTES: ", note_command);
+		ssh_command(note_command);
+	}
+	res.sendStatus(200);
+});
 app.listen(port, function() {
 	console.log('the server is listening on ', port);
-})
+});

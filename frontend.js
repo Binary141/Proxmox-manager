@@ -4,6 +4,7 @@ STOP_VM_URL = getStopVmUrl();
 START_VM_URL = getStartVmUrl();
 CLONE_VM_URL = getCloneVmUrl();
 RENAME_VM_URL = getRenameVmUrl();
+EDIT_NOTE_URL = getEditNoteUrl();
 
 var vm_table = document.getElementById("started_vms");
 var stopped_vm_table = document.getElementById("stopped_vms");
@@ -70,7 +71,8 @@ function change_state(id, url){
 	});
 }
 
-function edit_vm(that){ // that is the 'this' for the edit button
+function edit_vm(that, current_note, name_dictionary, memory_dictionary, boot_dictionary){ // that is the 'this' for the edit button
+	console.log("CURRENT: ", current_note);
 	if(that.innerHTML == "EDIT"){
 		that.innerHTML = "SAVE";
 		for(var cellindex = 1; cellindex < 4; cellindex++){ //converts td into editable field with the values preset that can be changed
@@ -109,11 +111,68 @@ function edit_vm(that){ // that is the 'this' for the edit button
 		}
 		else{ //revert back to table and 'EDIT' text in button on cancel
 			that.innerHTML = "EDIT";
-			for(var cellindex = 1; cellindex < 4; cellindex++){ //changes the input field for the editable fields back into a regular text td
-				temp_td = document.createElement("td");
-				temp_td.innerText = stopped_vm_table.rows[that.row].cells[cellindex].querySelector('input').value;
-				stopped_vm_table.rows[that.row].cells[cellindex].replaceWith(temp_td);
-			}
+			temp_td = document.createElement("td");
+			temp_td.innerText = name_dictionary[that.row];
+			stopped_vm_table.rows[that.row].cells[1].replaceWith(temp_td);
+
+			temp_td = document.createElement("td");
+			temp_td.innerText = memory_dictionary[that.row];
+			stopped_vm_table.rows[that.row].cells[2].replaceWith(temp_td);
+
+			temp_td = document.createElement("td");
+			temp_td.innerText = boot_dictionary[that.row];
+			stopped_vm_table.rows[that.row].cells[3].replaceWith(temp_td);
+
+			temp_td = document.createElement("td");
+			temp_td.innerText = current_note[that.row];
+			stopped_vm_table.rows[that.row].cells[5].replaceWith(temp_td);
+			create_buttons();
+		}
+	}
+}	
+
+function edit_note(that, current_note){ // that is the 'this' for the edit button
+	console.log("CURRENT: ", current_note);
+	 
+	if(that.innerHTML == "EDIT"){
+		that.innerHTML = "SAVE";
+		input_element = document.createElement("input");
+		input_element.value = vm_table.rows[that.row].cells[5].innerText;
+		temp_td = document.createElement("td");
+		temp_td.appendChild(input_element);
+		vm_table.rows[that.row].cells[5].replaceWith(temp_td);
+	}
+	else if(that.innerHTML == "SAVE"){
+		if(confirm("Do you want to save these settings?")){
+			data = "vmid=" + that.vmid +
+				"&newNote=" + "'" + vm_table.rows[that.row].cells[5].querySelector('input').value + "'";
+			console.log("DATA: ", data)
+
+			fetch(EDIT_NOTE_URL, {
+				method: 'PUT',
+				body: data,
+				headers: {'Content-type': 'application/x-www-form-urlencoded'},
+			}).then(function(response){
+				console.log("RESPONSE STATUS: ", response.status);
+				if(response.status == 200){
+					that.innerHTML = "EDIT";
+					temp_td = document.createElement("td");
+					temp_td.innerText = vm_table.rows[that.row].cells[5].querySelector('input').value;
+					current_note[that.row] = vm_table.rows[that.row].cells[5].querySelector('input').value;
+					vm_table.rows[that.row].cells[5].replaceWith(temp_td);
+
+				}
+				else{
+					alert("Name is invalid")
+				}
+			});
+		}
+		else{ //revert back to table and 'EDIT' text in button on cancel
+			that.innerHTML = "EDIT";
+			temp_td = document.createElement("td");
+			temp_td.innerText = current_note[that.row];
+			vm_table.rows[that.row].cells[5].replaceWith(temp_td);
+			create_buttons();
 		}
 	}
 }	
@@ -153,6 +212,56 @@ function clear_table(table){
 		table.deleteRow(i-1);
 	}
 }
+
+function create_buttons(){
+	let notes_dictionary = {};
+	let stopped_notes_dictionary = {};
+	let name_dictionary = {};
+	let memory_dictionary = {};
+	let boot_dictionary = [];
+	for(let i=1; i < stopped_vm_table.rows.length; i++){ //creates the edit button for stopped vms
+		if(stopped_vm_table.rows[i].cells.length > 7){
+			stopped_vm_table.rows[i].deleteCell(7);
+		}
+		edit_td = document.createElement("td");
+		edit_button = document.createElement("button");
+		edit_button.innerHTML = "EDIT";
+		edit_button.vmid = stopped_vm_table.rows[i].cells[0].innerText;
+		edit_button.row = i;
+		stopped_notes_dictionary[i] = stopped_vm_table.rows[i].cells[5].innerText;
+		name_dictionary[i] = stopped_vm_table.rows[i].cells[1].innerText;
+		memory_dictionary[i] = stopped_vm_table.rows[i].cells[2].innerText;
+		boot_dictionary[i] = stopped_vm_table.rows[i].cells[3].innerText;
+
+		edit_button.onclick = function(){
+			edit_vm(this, stopped_notes_dictionary, name_dictionary, memory_dictionary, boot_dictionary);
+		}
+
+		edit_td.appendChild(edit_button);
+		stopped_vm_table.rows[i].appendChild(edit_td);
+	}
+	for(let i=1; i < vm_table.rows.length; i++){ //creates the edit button for stopped vms
+		if(vm_table.rows[i].cells.length > 7){
+			vm_table.rows[i].deleteCell(7);
+		}
+		edit_td = document.createElement("td");
+		edit_button = document.createElement("button");
+		edit_button.innerHTML = "EDIT";
+		edit_button.vmid = vm_table.rows[i].cells[0].innerText;
+		edit_button.row = i;
+
+		notes_dictionary[i] = vm_table.rows[i].cells[5].innerText;
+
+		edit_button.onclick = function(){
+			edit_note(this, notes_dictionary);
+		}
+
+		edit_td.appendChild(edit_button);
+		vm_table.rows[i].appendChild(edit_td);
+	}
+}
+
+
 function load_urls(){
 	const wanted_json = ['id','name','memory','scsi0']
 	fetch(REQUEST_URL, {
@@ -240,21 +349,8 @@ function load_urls(){
 
 				}
 			} //end of for(i) loop
+			create_buttons();
 
-			for(let i=1; i < stopped_vm_table.rows.length; i++){ //creates the edit button for stopped vms
-				edit_td = document.createElement("td");
-				edit_button = document.createElement("button");
-				edit_button.innerHTML = "EDIT";
-				edit_button.vmid = stopped_vm_table.rows[i].cells[0].innerText;
-				edit_button.row = i;
-
-				edit_button.onclick = function(){
-					edit_vm(this);
-				}
-
-				edit_td.appendChild(edit_button);
-				stopped_vm_table.rows[i].appendChild(edit_td);
-			}
 	}); //end of response.json()
 }); //end of .then(function)
 }

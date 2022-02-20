@@ -15,3 +15,6 @@ function getCloneVmUrl() {
 function getRenameVmUrl() {
 	return "YOUR_URL_HERE";
 }
+function getEditNoteUrl() {
+	return "YOUR_URL_HERE";
+}
