@@ -42,6 +42,7 @@ async function execute_vmid(command){
 
 async function getHostStats(res, command) {
 	const results = await execute_vmid(command);
+	console.log("END OF RESULTS");
 	res.sendStatus(200);
 }
 
@@ -61,20 +62,20 @@ async function parse_id(res){
 	let text = '';
 
 	for(i = 0; i < vmid_list.length; i++){
-		command = 'cat /etc/pve/nodes/pve/qemu-server/' + vmid_list[i] + '.conf';
+		let command = 'cat /etc/pve/nodes/pve/qemu-server/' + vmid_list[i] + '.conf';
 		commands.push(command);
 	}
 	for(i=0; i < commands.length; i++){
 		let args = '';
 		let notes = "";
-		vmid = await execute_vmid(commands[i]);
+		let vmid = await execute_vmid(commands[i]);
 		config = vmid.split(/\r\n|\n\r|\n|\r/);
 
 		for(j=0; j < config.length; j++){
 			index = config[j];
 			if(index[0] != '#'){
-				word = index.slice(0, index.indexOf(":"));
-				value = index.slice(index.indexOf(":")+2)
+				let word = index.slice(0, index.indexOf(":"));
+				let value = index.slice(index.indexOf(":")+2)
 				args += '"' +  word.toString() + '"' + ':' + '"' + value.toString() + '",\n';
 			}
 			else{
@@ -100,7 +101,7 @@ async function parse_id(res){
 			text += '{ "id": "' + vmid_list[i].toString() + '",' + args + '\n}\n';
 		}
 	}
-	new_text = '[ ' + text + ']';
+	let new_text = '[ ' + text + ']';
 	console.log("SENT");
 	res.send(new_text);
 }
@@ -110,31 +111,31 @@ app.get('/test', (req, res) => {
 });
 
 app.post('/startvm', (req, res) => {
-	start_command = "qm start " + req.body.id;
+	let start_command = "qm start " + req.body.id;
 	console.log("start command", start_command);
 	getHostStats(res, start_command);
 });
 app.post('/stopvm', (req, res) => {
-	stop_command = "qm stop " + req.body.id;
+	let stop_command = "qm stop " + req.body.id;
 	console.log("stop command:", stop_command);
 	getHostStats(res, stop_command);
 });
 app.post('/clonevm', (req, res) => {
-	clone_command = "qm clone " + req.body.id + " " + req.body.newVmId// + " --full"
+	let clone_command = "qm clone " + req.body.id + " " + req.body.newVmId;// + " --full"
 	console.log("clone command", clone_command);
 	getHostStats(res, clone_command);
 });
 app.put('/renamevm', (req, res) => {
-	path = "/etc/pve/nodes/pve/qemu-server/"
+	let path = "/etc/pve/nodes/pve/qemu-server/"
 	if(req.body.newName.includes(' ')){
 		res.sendStatus(400);
 
 	}
 	else{
-		rename_command = "qm set " + req.body.vmid + " --name " + req.body.newName + " --memory " + req.body.newMemory;
+		let rename_command = "qm set " + req.body.vmid + " --name " + req.body.newName + " --memory " + req.body.newMemory;
 		if(req.body.newNote){
-			note = req.body.newNote.slice(1,req.body.newNote.length - 1);
-			note_command = "sed -i '/^#/d' " + path + req.body.vmid + ".conf; echo \"#" + note + "\" >> " + path + req.body.vmid + ".conf";
+			let note = req.body.newNote.slice(1,req.body.newNote.length - 1);
+			let note_command = "sed -i '/^#/d' " + path + req.body.vmid + ".conf; echo \"#" + note + "\" >> " + path + req.body.vmid + ".conf";
 			console.log("NOTES: ", note_command);
 			ssh_command(note_command);
 		}
@@ -143,7 +144,7 @@ app.put('/renamevm', (req, res) => {
 	}
 });
 app.put('/editnote', (req, res) => {
-	path = "/etc/pve/nodes/pve/qemu-server/"
+	let path = "/etc/pve/nodes/pve/qemu-server/"
 	if(req.body.newNote){
 		note = req.body.newNote.slice(1,req.body.newNote.length - 1);
 		note_command = "sed -i '/^#/d' " + path + req.body.vmid + ".conf; echo \"#" + note + "\" >> " + path + req.body.vmid + ".conf";
@@ -151,6 +152,14 @@ app.put('/editnote', (req, res) => {
 		ssh_command(note_command);
 	}
 	res.sendStatus(200);
+});
+app.put('/resizevm', (req, res) => {
+	let command = "qm resize " + req.body.vmid + " scsi0 +" + req.body.disk_increment;
+	console.log(command);
+	getHostStats(res, command);
+
+
+
 });
 app.listen(port, function() {
 	console.log('the server is listening on ', port);

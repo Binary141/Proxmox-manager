@@ -16,5 +16,8 @@ function getRenameVmUrl() {
 	return "YOUR_URL_HERE";
 }
 function getEditNoteUrl() {
-	return "YOUR_URL_HERE";
+	return "your_url_here";
+}
+function getDiskVmUrl() {
+	return "your_url_here";
 }
