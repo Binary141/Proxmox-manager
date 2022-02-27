@@ -12,6 +12,13 @@ var stopped_vm_table = document.getElementById("stopped_vms");
 var template_table = document.getElementById("templates");
 var cloneVm = document.getElementById("cloneVm");
 
+const vmidIndex = 0;
+const nameIndex = 2;
+const memoryIndex = 3;
+const diskIndex = 4;
+const vncIndex = 5;
+const notesIndex = 6;
+
 cloneVm.onclick = function(){
 	if(template_table.value != ""){
 		let template_vm_id = template_table[template_table.selectedIndex].vmid
@@ -20,10 +27,10 @@ cloneVm.onclick = function(){
 
 		// ------ Finds all the vm id numbers from all the tables
 		for(i = 1; i < vm_table.rows.length; i++){//row in vm_table.rows){
-			vmids.push(vm_table.rows[i].cells[0].innerText);
+			vmids.push(vm_table.rows[i].cells[vmidIndex].innerText);
 		}
 		for(i = 1; i < stopped_vm_table.rows.length; i++){//row in vm_table.rows){
-			vmids.push(stopped_vm_table.rows[i].cells[0].innerText);
+			vmids.push(stopped_vm_table.rows[i].cells[vmidIndex].innerText);
 		}
 		for(i=0; i < template_table.length; i++){
 			vmids.push(template_table[i].id);
@@ -74,17 +81,15 @@ function change_state(id, url){
 }
 
 function create_td(that, table, index, dictionary, text){
-	console.log("DICTIONARY: ", dictionary[that.row]);
 	let temp_td = document.createElement("td");
 	temp_td.innerText = text;
 	table.rows[that.row].cells[index].replaceWith(temp_td);
 }
 
-function edit_vm(that, current_note, name_dictionary, memory_dictionary, boot_dictionary, note_dictionary){ // that is the 'this' for the edit button
-	//console.log("CURRENT: ", current_note);
+function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_dictionary, boot_dictionary){ // that is the 'this' for the edit button
 	if(that.innerHTML == "EDIT"){
 		that.innerHTML = "SAVE";
-		for(var cellindex = 1; cellindex < 4; cellindex++){ //converts td into editable field with the values preset that can be changed
+		for(var cellindex = nameIndex; cellindex < vncIndex; cellindex++){ //converts td into editable fields with the current values
 			input_element = document.createElement("input");
 			input_element.value = stopped_vm_table.rows[that.row].cells[cellindex].innerText;
 			temp_td = document.createElement("td");
@@ -92,52 +97,54 @@ function edit_vm(that, current_note, name_dictionary, memory_dictionary, boot_di
 			stopped_vm_table.rows[that.row].cells[cellindex].replaceWith(temp_td);
 		}
 		input_element = document.createElement("input");
-		input_element.value = stopped_vm_table.rows[that.row].cells[5].innerText;
+		input_element.value = stopped_vm_table.rows[that.row].cells[notesIndex].innerText;
 		temp_td = document.createElement("td");
 		temp_td.appendChild(input_element);
-		stopped_vm_table.rows[that.row].cells[5].replaceWith(temp_td);
+		stopped_vm_table.rows[that.row].cells[notesIndex].replaceWith(temp_td);
 	}
 	else if(that.innerHTML == "SAVE"){
 		if(confirm("Do you want to save these settings?")){
-			let vm_name = stopped_vm_table.rows[that.row].cells[1].querySelector('input').value;
-			let vm_mem = stopped_vm_table.rows[that.row].cells[2].querySelector('input').value;
-			let vm_boot = stopped_vm_table.rows[that.row].cells[3].querySelector('input').value;
-			let vm_note = stopped_vm_table.rows[that.row].cells[5].querySelector('input').value;
+			let vm_name = stopped_vm_table.rows[that.row].cells[nameIndex].querySelector('input').value;
+			let vm_mem = stopped_vm_table.rows[that.row].cells[memoryIndex].querySelector('input').value;
+			let vm_boot = stopped_vm_table.rows[that.row].cells[diskIndex].querySelector('input').value;
+			let vm_note = stopped_vm_table.rows[that.row].cells[notesIndex].querySelector('input').value;
 
 
 			let data = "vmid=" + that.vmid + "&newName=\"" + vm_name + "\"" + 
 				"&newMemory=" + vm_mem +
 				"&newNote=" + "'" + vm_note + "'";
 			console.log("DATA: ", data)
+			console.log("NOTE DICTIONARY: ", stopped_notes_dictionary[that.row]);
 
 			//temp_td.innerText = name_dictionary[that.row];
 			if(name_dictionary[that.row] == vm_name && memory_dictionary[that.row] == vm_mem && boot_dictionary[that.row] == vm_boot){
-				//console.log("No change needed")
-				fetch(EDIT_NOTE_URL, {
-					method: 'PUT',
-					body: data,
-					headers: {'Content-type': 'application/x-www-form-urlencoded'},
-				}).then(function(response){
-					console.log("RESPONSE STATUS: ", response.status);
-					if(response.status == 200){
-						that.innerHTML = "EDIT";
-				create_td(that, stopped_vm_table, 5, current_note);
-						temp_td = document.createElement("td");
-						temp_td.innerText = vm_note;
-						current_note[that.row] = vm_note;
-						stopped_vm_table.rows[that.row].cells[5].replaceWith(temp_td);
-
-					}
-					else{
-						alert("Name is invalid")
-					}
-				});
-
+				//if the note was the only thing that changed, only request that change
+				if(stopped_notes_dictionary[that.row] != vm_note){
+					console.log("Change needed");
+					//If the note was modified, make the request
+					fetch(EDIT_NOTE_URL, {
+						method: 'PUT',
+						body: data,
+						headers: {'Content-type': 'application/x-www-form-urlencoded'},
+					}).then(function(response){
+						if(response.status == 200){
+							that.innerHTML = "EDIT";
+					create_td(that, stopped_vm_table, notesIndex, stopped_notes_dictionary);
+							temp_td = document.createElement("td");
+							temp_td.innerText = vm_note;
+							stopped_notes_dictionary[that.row] = vm_note;
+							stopped_vm_table.rows[that.row].cells[notesIndex].replaceWith(temp_td);
+						}
+						else{
+							alert("Name is invalid")
+						}
+					});
+				}
 				that.innerHTML = "EDIT";
-				create_td(that, stopped_vm_table, 1, name_dictionary, name_dictionary[that.row]);
-				create_td(that, stopped_vm_table, 2, memory_dictionary, memory_dictionary[that.row]);
-				create_td(that, stopped_vm_table, 3, boot_dictionary, boot_dictionary[that.row]);
-				create_td(that, stopped_vm_table, 5, current_note, current_note[that.row]);
+				create_td(that, stopped_vm_table, nameIndex, name_dictionary, name_dictionary[that.row]);
+				create_td(that, stopped_vm_table, memoryIndex, memory_dictionary, memory_dictionary[that.row]);
+				create_td(that, stopped_vm_table, diskIndex, boot_dictionary, boot_dictionary[that.row]);
+				create_td(that, stopped_vm_table, notesIndex, stopped_notes_dictionary, stopped_notes_dictionary[that.row]);
 				//create_buttons();
 
 			}
@@ -176,53 +183,59 @@ function edit_vm(that, current_note, name_dictionary, memory_dictionary, boot_di
 		}
 		else{ //revert back to table and 'EDIT' text in button on cancel
 			that.innerHTML = "EDIT";
-			create_td(that, stopped_vm_table, 1, name_dictionary, name_dictionary[that.row]);
-			create_td(that, stopped_vm_table, 2, memory_dictionary, memory_dictionary[that.row]);
-			create_td(that, stopped_vm_table, 3, boot_dictionary, boot_dictionary[that.row]);
-			create_td(that, stopped_vm_table, 5, current_note, current_note[that.row]);
+			create_td(that, stopped_vm_table, nameIndex, name_dictionary, name_dictionary[that.row]);
+			create_td(that, stopped_vm_table, memoryIndex, memory_dictionary, memory_dictionary[that.row]);
+			create_td(that, stopped_vm_table, diskIndex, boot_dictionary, boot_dictionary[that.row]);
+			create_td(that, stopped_vm_table, notesIndex, stopped_notes_dictionary, stopped_notes_dictionary[that.row]);
 			create_buttons();
 		}
 	}
 }	
 
 function edit_note(that, current_note){ // that is the 'this' for the edit button
-	console.log("CURRENT: ", current_note);
-	 
 	if(that.innerHTML == "EDIT"){
 		that.innerHTML = "SAVE";
 		input_element = document.createElement("input");
-		input_element.value = vm_table.rows[that.row].cells[5].innerText;
+		input_element.value = vm_table.rows[that.row].cells[notesIndex].innerText;
 		temp_td = document.createElement("td");
 		temp_td.appendChild(input_element);
-		vm_table.rows[that.row].cells[5].replaceWith(temp_td);
+		vm_table.rows[that.row].cells[notesIndex].replaceWith(temp_td);
 	}
 	else if(that.innerHTML == "SAVE"){
 		if(confirm("Do you want to save these settings?")){
-			data = "vmid=" + that.vmid +
-				"&newNote=" + "'" + vm_table.rows[that.row].cells[5].querySelector('input').value + "'";
-			console.log("DATA: ", data)
+			if(vm_table.rows[that.row].cells[notesIndex].querySelector('input').value != current_note[that.row]){
+				//Don't send change request if the data hasn't changed
+				data = "vmid=" + that.vmid +
+					"&newNote=" + "'" + vm_table.rows[that.row].cells[notesIndex].querySelector('input').value + "'";
+				console.log("DATA: ", data)
 
-			fetch(EDIT_NOTE_URL, {
-				method: 'PUT',
-				body: data,
-				headers: {'Content-type': 'application/x-www-form-urlencoded'},
-			}).then(function(response){
-				console.log("RESPONSE STATUS: ", response.status);
-				if(response.status == 200){
-					that.innerHTML = "EDIT";
-					current_note[that.row] = vm_table.rows[that.row].cells[5].querySelector('input').value;
-					create_td(that, vm_table, 5, current_note, vm_table.rows[that.row].cells[5].querySelector('input').value);
+				fetch(EDIT_NOTE_URL, {
+					method: 'PUT',
+					body: data,
+					headers: {'Content-type': 'application/x-www-form-urlencoded'},
+				}).then(function(response){
+					console.log("RESPONSE STATUS: ", response.status);
+					if(response.status == 200){
+						that.innerHTML = "EDIT";
+						current_note[that.row] = vm_table.rows[that.row].cells[notesIndex].querySelector('input').value;
+						create_td(that, vm_table, notesIndex, current_note, vm_table.rows[that.row].cells[notesIndex].querySelector('input').value);
 
 
-				}
-				else{
-					alert("Name is invalid")
-				}
-			});
+					}
+					else{
+						alert("Name is invalid")
+					}
+				});
+			}
+			else{
+				that.innerHTML = "EDIT";
+				create_td(that, vm_table, notesIndex, current_note, current_note[that.row]);
+				create_buttons();
+			}
 		}
 		else{ //revert back to table and 'EDIT' text in button on cancel
 			that.innerHTML = "EDIT";
-			create_td(that, vm_table, 5, current_note, current_note[that.row]);
+			create_td(that, vm_table, notesIndex, current_note, current_note[that.row]);
 			create_buttons();
 		}
 	}
@@ -277,15 +290,15 @@ function create_buttons(){
 		edit_td = document.createElement("td");
 		edit_button = document.createElement("button");
 		edit_button.innerHTML = "EDIT";
-		edit_button.vmid = stopped_vm_table.rows[i].cells[0].innerText;
+		edit_button.vmid = stopped_vm_table.rows[i].cells[vmidIndex].innerText;
 		edit_button.row = i;
-		stopped_notes_dictionary[i] = stopped_vm_table.rows[i].cells[5].innerText;
-		name_dictionary[i] = stopped_vm_table.rows[i].cells[1].innerText;
-		memory_dictionary[i] = stopped_vm_table.rows[i].cells[2].innerText;
-		boot_dictionary[i] = stopped_vm_table.rows[i].cells[3].innerText;
+		stopped_notes_dictionary[i] = stopped_vm_table.rows[i].cells[notesIndex].innerText;
+		name_dictionary[i] = stopped_vm_table.rows[i].cells[nameIndex].innerText;
+		memory_dictionary[i] = stopped_vm_table.rows[i].cells[memoryIndex].innerText;
+		boot_dictionary[i] = stopped_vm_table.rows[i].cells[diskIndex].innerText;
 
 		edit_button.onclick = function(){
-			edit_vm(this, stopped_notes_dictionary, name_dictionary, memory_dictionary, boot_dictionary, notes_dictionary);
+			edit_vm(this, stopped_notes_dictionary, name_dictionary, memory_dictionary, boot_dictionary);
 		}
 
 		edit_td.appendChild(edit_button);
@@ -298,10 +311,10 @@ function create_buttons(){
 		edit_td = document.createElement("td");
 		edit_button = document.createElement("button");
 		edit_button.innerHTML = "EDIT";
-		edit_button.vmid = vm_table.rows[i].cells[0].innerText;
+		edit_button.vmid = vm_table.rows[i].cells[vmidIndex].innerText;
 		edit_button.row = i;
 
-		notes_dictionary[i] = vm_table.rows[i].cells[5].innerText;
+		notes_dictionary[i] = vm_table.rows[i].cells[notesIndex].innerText;
 
 		edit_button.onclick = function(){
 			edit_note(this, notes_dictionary);
@@ -321,7 +334,7 @@ function create_tr_item(tr, text, curr_id){
 }
 
 function load_urls(){
-	const wanted_json = ['id','name','memory','scsi0']
+	const wanted_json = ['id','name','memory','scsi0', 'cores']
 	fetch(REQUEST_URL, {
 		method: 'GET',
 		headers: {},
