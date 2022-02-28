@@ -12,12 +12,15 @@ var stopped_vm_table = document.getElementById("stopped_vms");
 var template_table = document.getElementById("templates");
 var cloneVm = document.getElementById("cloneVm");
 
+// These are the column indexes in the tables
 const vmidIndex = 0;
+const coresIndex = 1;
 const nameIndex = 2;
 const memoryIndex = 3;
 const diskIndex = 4;
 const vncIndex = 5;
 const notesIndex = 6;
+const totalLength = 8; //this is the number of columns (vmid, cores, name, etc) plus 2 (the running status and edit button is where the 2 is calculated), this starts counting at 0
 
 cloneVm.onclick = function(){
 	if(template_table.value != ""){
@@ -89,6 +92,8 @@ function create_td(that, table, index, dictionary, text){
 function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_dictionary, boot_dictionary){ // that is the 'this' for the edit button
 	if(that.innerHTML == "EDIT"){
 		that.innerHTML = "SAVE";
+		let memory_options = ['512', '1024', '2048', '4096'];
+		let vm_mem = stopped_vm_table.rows[that.row].cells[memoryIndex].innerText;
 		for(var cellindex = nameIndex; cellindex < vncIndex; cellindex++){ //converts td into editable fields with the current values
 			input_element = document.createElement("input");
 			input_element.value = stopped_vm_table.rows[that.row].cells[cellindex].innerText;
@@ -96,18 +101,45 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 			temp_td.appendChild(input_element);
 			stopped_vm_table.rows[that.row].cells[cellindex].replaceWith(temp_td);
 		}
+
+		// makes the first element in the list the current memory of the vm
+		select_element = document.createElement("select");
+		select_element.id = "id";
+
+		option = document.createElement("option");
+		option.value = vm_mem;
+		option.text = vm_mem;
+
+		select_element.appendChild(option);
+		
+		// creates a list of memory options without the current vm memory in it
+		for(mem in memory_options){
+			if(memory_options[mem] != vm_mem){
+				option = document.createElement("option");
+				option.value = memory_options[mem];
+				option.text = memory_options[mem];
+
+				select_element.appendChild(option);
+			}
+		}
+		console.log("SELECT ELEMENT: ", select_element);
+
+		stopped_vm_table.rows[that.row].cells[memoryIndex].replaceWith(select_element);
+
 		input_element = document.createElement("input");
-		input_element.value = stopped_vm_table.rows[that.row].cells[notesIndex].innerText;
+		input_element.value = stopped_vm_table.rows[that.row].cells[notesIndex-1].innerText;
 		temp_td = document.createElement("td");
 		temp_td.appendChild(input_element);
-		stopped_vm_table.rows[that.row].cells[notesIndex].replaceWith(temp_td);
+		stopped_vm_table.rows[that.row].cells[notesIndex-1].replaceWith(temp_td);
+
 	}
 	else if(that.innerHTML == "SAVE"){
 		if(confirm("Do you want to save these settings?")){
+			console.log("SELECT: ", stopped_vm_table.rows[that.row].cells[notesIndex-1].querySelector('input').value);
 			let vm_name = stopped_vm_table.rows[that.row].cells[nameIndex].querySelector('input').value;
-			let vm_mem = stopped_vm_table.rows[that.row].cells[memoryIndex].querySelector('input').value;
-			let vm_boot = stopped_vm_table.rows[that.row].cells[diskIndex].querySelector('input').value;
-			let vm_note = stopped_vm_table.rows[that.row].cells[notesIndex].querySelector('input').value;
+			let vm_mem = stopped_vm_table.rows[that.row].querySelector('select').value;
+			let vm_boot = stopped_vm_table.rows[that.row].cells[diskIndex-1].querySelector('input').value;
+			let vm_note = stopped_vm_table.rows[that.row].cells[notesIndex-1].querySelector('input').value;
 
 
 			let data = "vmid=" + that.vmid + "&newName=\"" + vm_name + "\"" + 
@@ -129,7 +161,7 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 					}).then(function(response){
 						if(response.status == 200){
 							that.innerHTML = "EDIT";
-					create_td(that, stopped_vm_table, notesIndex, stopped_notes_dictionary);
+							create_td(that, stopped_vm_table, notesIndex, stopped_notes_dictionary);
 							temp_td = document.createElement("td");
 							temp_td.innerText = vm_note;
 							stopped_notes_dictionary[that.row] = vm_note;
@@ -141,8 +173,15 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 					});
 				}
 				that.innerHTML = "EDIT";
+
+				console.log("VM_MEM: ", memory_dictionary[that.row]);
+				
+				//replace the memory selection menu with a td element so the indexes are correct
+				let temp_td = document.createElement("td");
+				temp_td.innerText = memory_dictionary[that.row];
+				stopped_vm_table.rows[that.row].querySelector("select").replaceWith(temp_td);
+
 				create_td(that, stopped_vm_table, nameIndex, name_dictionary, name_dictionary[that.row]);
-				create_td(that, stopped_vm_table, memoryIndex, memory_dictionary, memory_dictionary[that.row]);
 				create_td(that, stopped_vm_table, diskIndex, boot_dictionary, boot_dictionary[that.row]);
 				create_td(that, stopped_vm_table, notesIndex, stopped_notes_dictionary, stopped_notes_dictionary[that.row]);
 				//create_buttons();
@@ -183,13 +222,20 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 		}
 		else{ //revert back to table and 'EDIT' text in button on cancel
 			that.innerHTML = "EDIT";
+			console.log("VM_MEM: ", memory_dictionary[that.row]);
+			
+			//replace the memory selection menu with a td element so the indexes are correct
+			let temp_td = document.createElement("td");
+			temp_td.innerText = memory_dictionary[that.row];
+			stopped_vm_table.rows[that.row].querySelector("select").replaceWith(temp_td);
+
 			create_td(that, stopped_vm_table, nameIndex, name_dictionary, name_dictionary[that.row]);
-			create_td(that, stopped_vm_table, memoryIndex, memory_dictionary, memory_dictionary[that.row]);
+			//create_td(that, stopped_vm_table, memoryIndex, memory_dictionary, memory_dictionary[that.row]);
 			create_td(that, stopped_vm_table, diskIndex, boot_dictionary, boot_dictionary[that.row]);
 			create_td(that, stopped_vm_table, notesIndex, stopped_notes_dictionary, stopped_notes_dictionary[that.row]);
 			create_buttons();
 		}
-	}
+}
 }	
 
 function edit_note(that, current_note){ // that is the 'this' for the edit button
@@ -284,8 +330,11 @@ function create_buttons(){
 	let memory_dictionary = {};
 	let boot_dictionary = [];
 	for(let i=1; i < stopped_vm_table.rows.length; i++){ //creates the edit button for stopped vms
-		if(stopped_vm_table.rows[i].cells.length > 7){
-			stopped_vm_table.rows[i].deleteCell(7);
+		if(stopped_vm_table.rows[i].cells.length > totalLength){ 
+			//this will just remove the edit button of each row. 
+			//Used to regenerate the dictionaries to keep track of the current data in the columns to allow 
+			//the cancel button to fill in the old data
+			stopped_vm_table.rows[i].deleteCell(totalLength);
 		}
 		edit_td = document.createElement("td");
 		edit_button = document.createElement("button");
@@ -304,9 +353,12 @@ function create_buttons(){
 		edit_td.appendChild(edit_button);
 		stopped_vm_table.rows[i].appendChild(edit_td);
 	}
-	for(let i=1; i < vm_table.rows.length; i++){ //creates the edit button for stopped vms
-		if(vm_table.rows[i].cells.length > 7){
-			vm_table.rows[i].deleteCell(7);
+	for(let i=1; i < vm_table.rows.length; i++){ //creates the edit button for running vms
+		if(vm_table.rows[i].cells.length > totalLength){
+			//this will just remove the edit button of each row. 
+			//Used to regenerate the dictionaries to keep track of the current data in the columns to allow 
+			//the cancel button to fill in the old data
+			vm_table.rows[i].deleteCell(totalLength);
 		}
 		edit_td = document.createElement("td");
 		edit_button = document.createElement("button");
