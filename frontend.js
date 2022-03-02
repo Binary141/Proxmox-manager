@@ -84,6 +84,7 @@ function change_state(id, url){
 }
 
 function create_td(that, table, index, dictionary, text){
+	console.log("DICTIONARY: ", dictionary);
 	let temp_td = document.createElement("td");
 	temp_td.innerText = text;
 	table.rows[that.row].cells[index].replaceWith(temp_td);
@@ -94,6 +95,9 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 		that.innerHTML = "SAVE";
 		let memory_options = ['512', '1024', '2048', '4096'];
 		let vm_mem = stopped_vm_table.rows[that.row].cells[memoryIndex].innerText;
+
+		let disk_options = ['4G', '8G', '16G', '32G'];
+		let vm_disk = stopped_vm_table.rows[that.row].cells[diskIndex].innerText;
 		for(var cellindex = nameIndex; cellindex < vncIndex; cellindex++){ //converts td into editable fields with the current values
 			input_element = document.createElement("input");
 			input_element.value = stopped_vm_table.rows[that.row].cells[cellindex].innerText;
@@ -122,24 +126,55 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 				select_element.appendChild(option);
 			}
 		}
-		console.log("SELECT ELEMENT: ", select_element);
+		let temp_td2 = document.createElement("td");
+		temp_td2.appendChild(select_element);
+		stopped_vm_table.rows[that.row].cells[memoryIndex].replaceWith(temp_td2);
 
-		stopped_vm_table.rows[that.row].cells[memoryIndex].replaceWith(select_element);
+		select_element = document.createElement("select");
+		select_element.id = "id";
+
+		option = document.createElement("option");
+		option.value = vm_disk;
+		option.text = vm_disk;
+
+		select_element.appendChild(option);
+		
+		// creates a list of memory options without the current vm memory in it
+		vm_gb = vm_disk.split('G')[0];
+		for(capacity in disk_options){
+			if(disk_options[capacity] != vm_disk){
+				option_gb = disk_options[capacity].split('G')[0];
+				if(parseInt(vm_gb) < parseInt(option_gb)){
+					option = document.createElement("option");
+					option.value = disk_options[capacity];
+					option.text = disk_options[capacity];
+
+					select_element.appendChild(option);
+				}
+			}
+		}
+		let temp_td3 = document.createElement("td");
+		temp_td3.appendChild(select_element);
+		stopped_vm_table.rows[that.row].cells[diskIndex].replaceWith(temp_td3);
+
+		stopped_vm_table.rows[that.row].cells[diskIndex-1].replaceWith(temp_td2);
 
 		input_element = document.createElement("input");
-		input_element.value = stopped_vm_table.rows[that.row].cells[notesIndex-1].innerText;
+		input_element.value = stopped_vm_table.rows[that.row].cells[notesIndex].innerText;
 		temp_td = document.createElement("td");
 		temp_td.appendChild(input_element);
-		stopped_vm_table.rows[that.row].cells[notesIndex-1].replaceWith(temp_td);
+		stopped_vm_table.rows[that.row].cells[notesIndex].replaceWith(temp_td);
 
 	}
 	else if(that.innerHTML == "SAVE"){
 		if(confirm("Do you want to save these settings?")){
-			console.log("SELECT: ", stopped_vm_table.rows[that.row].cells[notesIndex-1].querySelector('input').value);
+			console.log("SELECT: ", stopped_vm_table.rows[that.row].cells[notesIndex].querySelector('input').value);
 			let vm_name = stopped_vm_table.rows[that.row].cells[nameIndex].querySelector('input').value;
-			let vm_mem = stopped_vm_table.rows[that.row].querySelector('select').value;
-			let vm_boot = stopped_vm_table.rows[that.row].cells[diskIndex-1].querySelector('input').value;
-			let vm_note = stopped_vm_table.rows[that.row].cells[notesIndex-1].querySelector('input').value;
+			let vm_mem = stopped_vm_table.rows[that.row].cells[memoryIndex].querySelector('select').value;
+			let vm_boot = stopped_vm_table.rows[that.row].cells[diskIndex].querySelector('select').value;
+			console.log("VM_BOOT: ", vm_boot);
+			console.log("VM_MEM: ", vm_mem);
+			let vm_note = stopped_vm_table.rows[that.row].cells[notesIndex].querySelector('input').value;
 
 
 			let data = "vmid=" + that.vmid + "&newName=\"" + vm_name + "\"" + 
@@ -148,7 +183,7 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 			console.log("DATA: ", data)
 			console.log("NOTE DICTIONARY: ", stopped_notes_dictionary[that.row]);
 
-			//temp_td.innerText = name_dictionary[that.row];
+			temp_td.innerText = name_dictionary[that.row];
 			if(name_dictionary[that.row] == vm_name && memory_dictionary[that.row] == vm_mem && boot_dictionary[that.row] == vm_boot){
 				//if the note was the only thing that changed, only request that change
 				if(stopped_notes_dictionary[that.row] != vm_note){
@@ -173,19 +208,10 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 					});
 				}
 				that.innerHTML = "EDIT";
-
-				console.log("VM_MEM: ", memory_dictionary[that.row]);
-				
-				//replace the memory selection menu with a td element so the indexes are correct
-				let temp_td = document.createElement("td");
-				temp_td.innerText = memory_dictionary[that.row];
-				stopped_vm_table.rows[that.row].querySelector("select").replaceWith(temp_td);
-
 				create_td(that, stopped_vm_table, nameIndex, name_dictionary, name_dictionary[that.row]);
+				create_td(that, stopped_vm_table, memoryIndex, boot_dictionary, memory_dictionary[that.row]);
 				create_td(that, stopped_vm_table, diskIndex, boot_dictionary, boot_dictionary[that.row]);
 				create_td(that, stopped_vm_table, notesIndex, stopped_notes_dictionary, stopped_notes_dictionary[that.row]);
-				//create_buttons();
-
 			}
 			else{
 				fetch(RENAME_VM_URL, {
@@ -200,40 +226,36 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 					else if(response.status == 200){
 						console.log("HELLO THERE");
 
+						if(boot_dictionary[that.row] != vm_boot){
+							data = "vmid=" + that.vmid + "&disk_increment=" + vm_boot;
+							fetch(DISK_VM_URL, {
+								method: 'PUT',
+								body: data,
+								headers: {'Content-type': 'application/x-www-form-urlencoded'},
+							}).then(function(response){
+								console.log("RESPONSE STATUS: ", response.status);
+								if(response.status == 400){
+									alert("Name is invalid")
+								}
+								else if(response.status == 200){
+									console.log("HELLO");
+									load_urls();
+								}
+							});
+						}
+
+						load_urls();
 					}
 
-					data = "vmid=" + that.vmid + "&disk_increment=" + vm_boot;
-					fetch(DISK_VM_URL, {
-						method: 'PUT',
-						body: data,
-						headers: {'Content-type': 'application/x-www-form-urlencoded'},
-					}).then(function(response){
-						console.log("RESPONSE STATUS: ", response.status);
-						if(response.status == 400){
-							alert("Name is invalid")
-						}
-						else if(response.status == 200){
-							console.log("HELLO");
-							load_urls();
-						}
-					});
 				});
 			}
 		}
 		else{ //revert back to table and 'EDIT' text in button on cancel
 			that.innerHTML = "EDIT";
-			console.log("VM_MEM: ", memory_dictionary[that.row]);
-			
-			//replace the memory selection menu with a td element so the indexes are correct
-			let temp_td = document.createElement("td");
-			temp_td.innerText = memory_dictionary[that.row];
-			stopped_vm_table.rows[that.row].querySelector("select").replaceWith(temp_td);
-
 			create_td(that, stopped_vm_table, nameIndex, name_dictionary, name_dictionary[that.row]);
-			//create_td(that, stopped_vm_table, memoryIndex, memory_dictionary, memory_dictionary[that.row]);
+			create_td(that, stopped_vm_table, memoryIndex, memory_dictionary, memory_dictionary[that.row]);
 			create_td(that, stopped_vm_table, diskIndex, boot_dictionary, boot_dictionary[that.row]);
 			create_td(that, stopped_vm_table, notesIndex, stopped_notes_dictionary, stopped_notes_dictionary[that.row]);
-			create_buttons();
 		}
 }
 }	
