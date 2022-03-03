@@ -172,14 +172,13 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 			let vm_name = stopped_vm_table.rows[that.row].cells[nameIndex].querySelector('input').value;
 			let vm_mem = stopped_vm_table.rows[that.row].cells[memoryIndex].querySelector('select').value;
 			let vm_boot = stopped_vm_table.rows[that.row].cells[diskIndex].querySelector('select').value;
-			console.log("VM_BOOT: ", vm_boot);
-			console.log("VM_MEM: ", vm_mem);
 			let vm_note = stopped_vm_table.rows[that.row].cells[notesIndex].querySelector('input').value;
+			let curr_disk = boot_dictionary[that.row].split('G')[0];
 
 
 			let data = "vmid=" + that.vmid + "&newName=\"" + vm_name + "\"" + 
 				"&newMemory=" + vm_mem +
-				"&newNote=" + "'" + vm_note + "'";
+				"&newNote=" + "'" + vm_note + "'" + "&current_size=" + curr_disk;
 			console.log("DATA: ", data)
 			console.log("NOTE DICTIONARY: ", stopped_notes_dictionary[that.row]);
 
@@ -203,7 +202,7 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 							stopped_vm_table.rows[that.row].cells[notesIndex].replaceWith(temp_td);
 						}
 						else{
-							alert("Name is invalid")
+							alert("Name is")
 						}
 					});
 				}
@@ -221,13 +220,15 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 				}).then(function(response){
 					console.log("RESPONSE STATUS: ", response.status);
 					if(response.status == 400){
-						alert("Name is invalid")
+						alert("Name")
 					}
 					else if(response.status == 200){
 						console.log("HELLO THERE");
 
 						if(boot_dictionary[that.row] != vm_boot){
-							data = "vmid=" + that.vmid + "&disk_increment=" + vm_boot;
+							console.log("vm_boot: ", vm_boot.split('G')[0]);
+							console.log("curr_disk: ", curr_disk);
+							data = "vmid=" + that.vmid + "&disk_increment=" + (parseInt(vm_boot.split('G')[0])-curr_disk) + "&current_size=" + curr_disk;
 							fetch(DISK_VM_URL, {
 								method: 'PUT',
 								body: data,
@@ -235,7 +236,7 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 							}).then(function(response){
 								console.log("RESPONSE STATUS: ", response.status);
 								if(response.status == 400){
-									alert("Name is invalid")
+									alert("Something went wrong")
 								}
 								else if(response.status == 200){
 									console.log("HELLO");
@@ -291,7 +292,7 @@ function edit_note(that, current_note){ // that is the 'this' for the edit butto
 
 					}
 					else{
-						alert("Name is invalid")
+						alert("Name i")
 					}
 				});
 			}

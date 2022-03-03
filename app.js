@@ -17,6 +17,7 @@ const v_host = config.ip
 const server_password = config.password
 const server_username = config.username;
 const privKey = config.privKey;
+const max_vm_size = 32;
 
 // ------- Express setup -------
 app.use(cors());
@@ -154,12 +155,16 @@ app.put('/editnote', (req, res) => {
 	res.sendStatus(200);
 });
 app.put('/resizevm', (req, res) => {
-	let command = "qm resize " + req.body.vmid + " scsi0 +" + req.body.disk_increment;
-	console.log(command);
-	getHostStats(res, command);
-
-
-
+	let requested_new_size = req.body.disk_increment + req.body.current_size;
+	console.log("curr: ", req.body.current_size, "increment: ", req.body.disk_increment)
+	if(max_vm_size < requested_new_size){
+		let command = "qm resize " + req.body.vmid + " scsi0 +" + req.body.disk_increment + 'G';
+		console.log(command);
+		getHostStats(res, command);
+	}
+	else{
+		res.sendStatus(400);
+	}
 });
 app.listen(port, function() {
 	console.log('the server is listening on ', port);
