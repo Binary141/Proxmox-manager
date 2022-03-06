@@ -18,6 +18,7 @@ const server_password = config.password
 const server_username = config.username;
 const privKey = config.privKey;
 const max_vm_size = 32;
+const directory = "/etc/pve/nodes/$HOSTNAME/qemu-server/";
 
 // ------- Express setup -------
 app.use(cors());
@@ -51,19 +52,26 @@ async function ssh_command(command) {
 	const results = await execute_vmid(command);
 }
 
+async function ssh_commands(res, command1, command2) {
+	const results = await execute_vmid(command1);
+	const results2 = await execute_vmid(command2);
+	console.log("END OF RESULTS");
+	res.sendStatus(200);
+}
+
 async function parse_id(res){
-	let new_data = await execute_vmid('ls -la /etc/pve/nodes/pve/qemu-server/ | awk \'{print $9}\' | awk \'NR>3\' | sed \'s/.\\{4\\}\$//\'');
+	let new_data = await execute_vmid('ls -la ' + directory +' | awk \'{print $9}\' | awk \'NR>3\' | sed \'s/.\\{4\\}\$//\'');
 	//magical awk and sed statements. print $9 will list just the .conf files, then will print from the top rows removing 
 	//the . and .. from the directory, then the sed will remove the last 4 characters leaving just the . of the extension 
 	//so it can be split into an array
-	let vmid_list = new_data.replace(/\n/g, '').split('.');
+	let vmid_list = new_data.replace(/\n/g, '').split('.').filter(Number);
 	let conf_files = new_data.split('');
 	let commands = [];
 	let config = "";
 	let text = '';
 
 	for(i = 0; i < vmid_list.length; i++){
-		let command = 'cat /etc/pve/nodes/pve/qemu-server/' + vmid_list[i] + '.conf';
+		let command = 'cat ' + directory + vmid_list[i] + '.conf';
 		commands.push(command);
 	}
 	for(i=0; i < commands.length; i++){
@@ -123,11 +131,12 @@ app.post('/stopvm', (req, res) => {
 });
 app.post('/clonevm', (req, res) => {
 	let clone_command = "qm clone " + req.body.id + " " + req.body.newVmId;// + " --full"
+	let add_vnc = "echo args: -vnc 0.0.0.0:" + req.body.newVncPort + " >> " + directory + req.body.newVmId + ".conf"; 
+	console.log("vnc port: ", req.body.newVncPort)
 	console.log("clone command", clone_command);
-	getHostStats(res, clone_command);
+	ssh_commands(res, clone_command, add_vnc);
 });
 app.put('/renamevm', (req, res) => {
-	let path = "/etc/pve/nodes/pve/qemu-server/"
 	if(req.body.newName.includes(' ')){
 		res.sendStatus(400);
 
@@ -136,7 +145,7 @@ app.put('/renamevm', (req, res) => {
 		let rename_command = "qm set " + req.body.vmid + " --name " + req.body.newName + " --memory " + req.body.newMemory;
 		if(req.body.newNote){
 			let note = req.body.newNote.slice(1,req.body.newNote.length - 1);
-			let note_command = "sed -i '/^#/d' " + path + req.body.vmid + ".conf; echo \"#" + note + "\" >> " + path + req.body.vmid + ".conf";
+			let note_command = "sed -i '/^#/d' " + directory + req.body.vmid + ".conf; echo \"#" + note + "\" >> " + directory + req.body.vmid + ".conf";
 			console.log("NOTES: ", note_command);
 			ssh_command(note_command);
 		}
@@ -145,10 +154,9 @@ app.put('/renamevm', (req, res) => {
 	}
 });
 app.put('/editnote', (req, res) => {
-	let path = "/etc/pve/nodes/pve/qemu-server/"
 	if(req.body.newNote){
 		note = req.body.newNote.slice(1,req.body.newNote.length - 1);
-		note_command = "sed -i '/^#/d' " + path + req.body.vmid + ".conf; echo \"#" + note + "\" >> " + path + req.body.vmid + ".conf";
+		note_command = "sed -i '/^#/d' " + directory + req.body.vmid + ".conf; echo \"#" + note + "\" >> " + directory + req.body.vmid + ".conf";
 		console.log("NOTES: ", note_command);
 		ssh_command(note_command);
 	}
@@ -161,6 +169,7 @@ app.put('/resizevm', (req, res) => {
 		let command = "qm resize " + req.body.vmid + " scsi0 +" + req.body.disk_increment + 'G';
 		console.log(command);
 		getHostStats(res, command);
+		res.sendStatus(200);
 	}
 	else{
 		res.sendStatus(400);

@@ -26,21 +26,27 @@ cloneVm.onclick = function(){
 	if(template_table.value != ""){
 		let template_vm_id = template_table[template_table.selectedIndex].vmid
 		let vmids = [];
+		let vncPorts = [];
 		let clone_id;
+		let newVncPort;
 
 		// ------ Finds all the vm id numbers from all the tables
 		for(i = 1; i < vm_table.rows.length; i++){//row in vm_table.rows){
 			vmids.push(vm_table.rows[i].cells[vmidIndex].innerText);
+			vncPorts.push(vm_table.rows[i].cells[vncIndex].innerText);
 		}
 		for(i = 1; i < stopped_vm_table.rows.length; i++){//row in vm_table.rows){
 			vmids.push(stopped_vm_table.rows[i].cells[vmidIndex].innerText);
+			vncPorts.push(stopped_vm_table.rows[i].cells[vncIndex].innerText);
 		}
 		for(i=0; i < template_table.length; i++){
 			vmids.push(template_table[i].id);
+			//vncPorts.push(template_table[i].id);
 		}
 		// ------------------
 
 		console.log("IDS: ", vmids);
+		console.log("VNC: ", vncPorts.filter(Number));
 
 		for(i = 100; i <= 999; i++){ //finds the lowest number that isn't in the list of vmids
 			if(!vmids.includes(String(i))){ //if the number is not in the list, that will be the new id of the cloned vm
@@ -49,7 +55,15 @@ cloneVm.onclick = function(){
 			}
 		}
 
-		data = "id=" + template_vm_id + "&newVmId=" + clone_id;
+		for(i = 5900; i <= 7000; i++){
+			if(!vncPorts.filter(Number).includes(String(i))){ //if the number is not in the list, that will be the new id of the cloned vm
+				newVncPort = i-5900; //Proxmox will automatically add 5900 to the port number so we need to adjust the new port
+				break;
+			}
+		}
+		console.log("NEW VNC PORT: ", newVncPort);
+
+		data = "id=" + template_vm_id + "&newVmId=" + clone_id + "&newVncPort=" + newVncPort;
 		console.log("DATA: ", data);
 		if(confirm("Are you sure you want to clone the vm " + template_vm_id)){
 
@@ -59,6 +73,7 @@ cloneVm.onclick = function(){
 				headers: {'Content-type': 'application/x-www-form-urlencoded'},
 			}).then(function(response){
 				if(response.status == 200){
+					alert("200");
 					load_urls();
 				}
 				else{
@@ -179,10 +194,10 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 			let data = "vmid=" + that.vmid + "&newName=\"" + vm_name + "\"" + 
 				"&newMemory=" + vm_mem +
 				"&newNote=" + "'" + vm_note + "'" + "&current_size=" + curr_disk;
-			console.log("DATA: ", data)
 			console.log("NOTE DICTIONARY: ", stopped_notes_dictionary[that.row]);
+			console.log("VM_NAME: ", vm_name)
 
-			temp_td.innerText = name_dictionary[that.row];
+			//temp_td.innerText = name_dictionary[that.row];
 			if(name_dictionary[that.row] == vm_name && memory_dictionary[that.row] == vm_mem && boot_dictionary[that.row] == vm_boot){
 				//if the note was the only thing that changed, only request that change
 				if(stopped_notes_dictionary[that.row] != vm_note){
@@ -195,6 +210,7 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 					}).then(function(response){
 						if(response.status == 200){
 							that.innerHTML = "EDIT";
+							console.log("HOWDY");
 							create_td(that, stopped_vm_table, notesIndex, stopped_notes_dictionary);
 							temp_td = document.createElement("td");
 							temp_td.innerText = vm_note;
@@ -208,7 +224,7 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 				}
 				that.innerHTML = "EDIT";
 				create_td(that, stopped_vm_table, nameIndex, name_dictionary, name_dictionary[that.row]);
-				create_td(that, stopped_vm_table, memoryIndex, boot_dictionary, memory_dictionary[that.row]);
+				create_td(that, stopped_vm_table, memoryIndex, memory_dictionary, memory_dictionary[that.row]);
 				create_td(that, stopped_vm_table, diskIndex, boot_dictionary, boot_dictionary[that.row]);
 				create_td(that, stopped_vm_table, notesIndex, stopped_notes_dictionary, stopped_notes_dictionary[that.row]);
 			}
@@ -218,7 +234,6 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 					body: data,
 					headers: {'Content-type': 'application/x-www-form-urlencoded'},
 				}).then(function(response){
-					console.log("RESPONSE STATUS: ", response.status);
 					if(response.status == 400){
 						alert("Name")
 					}
@@ -234,7 +249,6 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 								body: data,
 								headers: {'Content-type': 'application/x-www-form-urlencoded'},
 							}).then(function(response){
-								console.log("RESPONSE STATUS: ", response.status);
 								if(response.status == 400){
 									alert("Something went wrong")
 								}
@@ -283,7 +297,6 @@ function edit_note(that, current_note){ // that is the 'this' for the edit butto
 					body: data,
 					headers: {'Content-type': 'application/x-www-form-urlencoded'},
 				}).then(function(response){
-					console.log("RESPONSE STATUS: ", response.status);
 					if(response.status == 200){
 						that.innerHTML = "EDIT";
 						current_note[that.row] = vm_table.rows[that.row].cells[notesIndex].querySelector('input').value;
@@ -419,7 +432,7 @@ function load_urls(){
 		clear_table(vm_table); //clears running vm table to not keep duplicating upon new requests
 		clear_table(stopped_vm_table);//clears stopped vm table to not keep duplicating upon new requests
 		response.json().then(function (data) {
-			for(i=0; i<data.length - 1; i++){ //loops through each row of JSON sent from server
+			for(i=0; i<data.length; i++){ //loops through each row of JSON sent from server
 				curr_vm = data[i];
 				appendedstring = "";
 
