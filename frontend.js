@@ -105,14 +105,19 @@ function create_td(that, table, index, dictionary, text){
 	table.rows[that.row].cells[index].replaceWith(temp_td);
 }
 
-function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_dictionary, boot_dictionary){ // that is the 'this' for the edit button
+function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_dictionary, boot_dictionary, cores_dictionary){ // that is the 'this' for the edit button
 	if(that.innerHTML == "EDIT"){
 		that.innerHTML = "SAVE";
+		let core_options = ['1', '2', '4', '8'];
 		let memory_options = ['512', '1024', '2048', '4096'];
-		let vm_mem = stopped_vm_table.rows[that.row].cells[memoryIndex].innerText;
-
 		let disk_options = ['4G', '8G', '16G', '32G'];
+		let vm_mem = stopped_vm_table.rows[that.row].cells[memoryIndex].innerText;
+		let vm_core = stopped_vm_table.rows[that.row].cells[coresIndex].innerText;
 		let vm_disk = stopped_vm_table.rows[that.row].cells[diskIndex].innerText;
+		let temp_td2 = document.createElement("td");
+		let temp_td3 = document.createElement("td");
+		let temp_td4 = document.createElement("td");
+
 		for(var cellindex = nameIndex; cellindex < vncIndex; cellindex++){ //converts td into editable fields with the current values
 			input_element = document.createElement("input");
 			input_element.value = stopped_vm_table.rows[that.row].cells[cellindex].innerText;
@@ -124,13 +129,10 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 		// makes the first element in the list the current memory of the vm
 		select_element = document.createElement("select");
 		select_element.id = "id";
-
 		option = document.createElement("option");
 		option.value = vm_mem;
 		option.text = vm_mem;
-
 		select_element.appendChild(option);
-		
 		// creates a list of memory options without the current vm memory in it
 		for(mem in memory_options){
 			if(memory_options[mem] != vm_mem){
@@ -141,20 +143,15 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 				select_element.appendChild(option);
 			}
 		}
-		let temp_td2 = document.createElement("td");
-		temp_td2.appendChild(select_element);
-		stopped_vm_table.rows[that.row].cells[memoryIndex].replaceWith(temp_td2);
 
+		temp_td2.appendChild(select_element);
 		select_element = document.createElement("select");
 		select_element.id = "id";
-
 		option = document.createElement("option");
 		option.value = vm_disk;
 		option.text = vm_disk;
-
 		select_element.appendChild(option);
-		
-		// creates a list of memory options without the current vm memory in it
+		// creates a list of disk size options without the current vm memory in it
 		vm_gb = vm_disk.split('G')[0];
 		for(capacity in disk_options){
 			if(disk_options[capacity] != vm_disk){
@@ -168,11 +165,31 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 				}
 			}
 		}
-		let temp_td3 = document.createElement("td");
 		temp_td3.appendChild(select_element);
-		stopped_vm_table.rows[that.row].cells[diskIndex].replaceWith(temp_td3);
 
-		stopped_vm_table.rows[that.row].cells[diskIndex-1].replaceWith(temp_td2);
+		select_element = document.createElement("select");
+		select_element.id = "id";
+		option = document.createElement("option");
+		option.value = vm_core;
+		option.text = vm_core;
+		select_element.appendChild(option);
+		// creates a list of core count options without the current vm memory in it
+		for(core in core_options){
+			if(core_options[core] != vm_core){
+				option = document.createElement("option");
+				option.value = core_options[core];
+				option.text = core_options[core];
+
+				select_element.appendChild(option);
+			}
+		}
+		temp_td4.appendChild(select_element);
+
+		console.log("TD4: ", temp_td4);
+
+		stopped_vm_table.rows[that.row].cells[coresIndex].replaceWith(temp_td4);
+		stopped_vm_table.rows[that.row].cells[diskIndex].replaceWith(temp_td3);
+		stopped_vm_table.rows[that.row].cells[memoryIndex].replaceWith(temp_td2);
 
 		input_element = document.createElement("input");
 		input_element.value = stopped_vm_table.rows[that.row].cells[notesIndex].innerText;
@@ -187,22 +204,19 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 			let vm_name = stopped_vm_table.rows[that.row].cells[nameIndex].querySelector('input').value;
 			let vm_mem = stopped_vm_table.rows[that.row].cells[memoryIndex].querySelector('select').value;
 			let vm_boot = stopped_vm_table.rows[that.row].cells[diskIndex].querySelector('select').value;
+			let vm_core = stopped_vm_table.rows[that.row].cells[coresIndex].querySelector('select').value;
 			let vm_note = stopped_vm_table.rows[that.row].cells[notesIndex].querySelector('input').value;
 			let curr_disk = boot_dictionary[that.row].split('G')[0];
 
 
 			let data = "vmid=" + that.vmid + "&newName=\"" + vm_name + "\"" + 
 				"&newMemory=" + vm_mem +
-				"&newNote=" + "'" + vm_note + "'" + "&current_size=" + curr_disk;
-			console.log("NOTE DICTIONARY: ", stopped_notes_dictionary[that.row]);
-			console.log("VM_NAME: ", vm_name)
-
-			//temp_td.innerText = name_dictionary[that.row];
-			if(name_dictionary[that.row] == vm_name && memory_dictionary[that.row] == vm_mem && boot_dictionary[that.row] == vm_boot){
+				"&newNote=" + "'" + vm_note + "'" + "&current_size=" + curr_disk + "&coreCount=" + vm_core;
+			if(name_dictionary[that.row] == vm_name && memory_dictionary[that.row] == vm_mem && 
+				boot_dictionary[that.row] == vm_boot && cores_dictionary[that.row] == vm_core){
 				//if the note was the only thing that changed, only request that change
-				if(stopped_notes_dictionary[that.row] != vm_note){
-					console.log("Change needed");
-					//If the note was modified, make the request
+				if(stopped_notes_dictionary[that.row] != vm_note){ //If the note was modified, make the request
+					console.log("1");
 					fetch(EDIT_NOTE_URL, {
 						method: 'PUT',
 						body: data,
@@ -227,8 +241,10 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 				create_td(that, stopped_vm_table, memoryIndex, memory_dictionary, memory_dictionary[that.row]);
 				create_td(that, stopped_vm_table, diskIndex, boot_dictionary, boot_dictionary[that.row]);
 				create_td(that, stopped_vm_table, notesIndex, stopped_notes_dictionary, stopped_notes_dictionary[that.row]);
+				create_td(that, stopped_vm_table, coresIndex, cores_dictionary, cores_dictionary[that.row]);
 			}
 			else{
+				console.log("2");
 				fetch(RENAME_VM_URL, {
 					method: 'PUT',
 					body: data,
@@ -258,8 +274,7 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 								}
 							});
 						}
-
-						load_urls();
+					load_urls();
 					}
 
 				});
@@ -271,6 +286,7 @@ function edit_vm(that, stopped_notes_dictionary, name_dictionary, memory_diction
 			create_td(that, stopped_vm_table, memoryIndex, memory_dictionary, memory_dictionary[that.row]);
 			create_td(that, stopped_vm_table, diskIndex, boot_dictionary, boot_dictionary[that.row]);
 			create_td(that, stopped_vm_table, notesIndex, stopped_notes_dictionary, stopped_notes_dictionary[that.row]);
+			create_td(that, stopped_vm_table, coresIndex, cores_dictionary, cores_dictionary[that.row]);
 		}
 }
 }	
@@ -364,6 +380,7 @@ function create_buttons(){
 	let stopped_notes_dictionary = {};
 	let name_dictionary = {};
 	let memory_dictionary = {};
+	let cores_dictionary = {};
 	let boot_dictionary = [];
 	for(let i=1; i < stopped_vm_table.rows.length; i++){ //creates the edit button for stopped vms
 		if(stopped_vm_table.rows[i].cells.length > totalLength){ 
@@ -380,10 +397,11 @@ function create_buttons(){
 		stopped_notes_dictionary[i] = stopped_vm_table.rows[i].cells[notesIndex].innerText;
 		name_dictionary[i] = stopped_vm_table.rows[i].cells[nameIndex].innerText;
 		memory_dictionary[i] = stopped_vm_table.rows[i].cells[memoryIndex].innerText;
+		cores_dictionary[i] = stopped_vm_table.rows[i].cells[coresIndex].innerText;
 		boot_dictionary[i] = stopped_vm_table.rows[i].cells[diskIndex].innerText;
 
 		edit_button.onclick = function(){
-			edit_vm(this, stopped_notes_dictionary, name_dictionary, memory_dictionary, boot_dictionary);
+			edit_vm(this, stopped_notes_dictionary, name_dictionary, memory_dictionary, boot_dictionary, cores_dictionary);
 		}
 
 		edit_td.appendChild(edit_button);

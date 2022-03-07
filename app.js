@@ -137,12 +137,13 @@ app.post('/clonevm', (req, res) => {
 	ssh_commands(res, clone_command, add_vnc);
 });
 app.put('/renamevm', (req, res) => {
+	console.log("CORES: ", req.body.coreCount);
 	if(req.body.newName.includes(' ')){
 		res.sendStatus(400);
 
 	}
 	else{
-		let rename_command = "qm set " + req.body.vmid + " --name " + req.body.newName + " --memory " + req.body.newMemory;
+		let rename_command = "qm set " + req.body.vmid + " --name " + req.body.newName + " --memory " + req.body.newMemory + " --cores " + req.body.coreCount;
 		if(req.body.newNote){
 			let note = req.body.newNote.slice(1,req.body.newNote.length - 1);
 			let note_command = "sed -i '/^#/d' " + directory + req.body.vmid + ".conf; echo \"#" + note + "\" >> " + directory + req.body.vmid + ".conf";
@@ -169,7 +170,6 @@ app.put('/resizevm', (req, res) => {
 		let command = "qm resize " + req.body.vmid + " scsi0 +" + req.body.disk_increment + 'G';
 		console.log(command);
 		getHostStats(res, command);
-		res.sendStatus(200);
 	}
 	else{
 		res.sendStatus(400);
